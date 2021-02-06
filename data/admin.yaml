@@ -1,0 +1,46 @@
+---
+:name: admin
+:default_budget: '900'
+:spending:
+  2021:
+    2:
+      :monthly_budget: '500'
+      :bills:
+      - :id: '20210206135254'
+        :date: '2021-02-05'
+        :vendor: Apple
+        :amount: '100'
+      - :id: '20210206140243'
+        :date: '2021-02-02'
+        :vendor: EDEKA
+        :amount: '25'
+      - :id: '20210206144314'
+        :date: '2021-02-01'
+        :vendor: Coffee
+        :amount: '1.9'
+      - :id: '20210206144400'
+        :date: '2021-02-06'
+        :vendor: Weideei
+        :amount: '25'
+    1:
+      :monthly_budget: '500'
+      :bills:
+      - :id: '20210206140601'
+        :date: '2021-01-04'
+        :vendor: DM
+        :amount: '12'
+  2020:
+    12:
+      :monthly_budget: '500'
+      :bills:
+      - :id: '20210206140533'
+        :date: '2020-12-18'
+        :vendor: Toys R Us
+        :amount: '275'
+    11:
+      :monthly_budget: '500'
+      :bills:
+      - :id: '20210206140547'
+        :date: '2020-11-18'
+        :vendor: ASEA
+        :amount: '160'

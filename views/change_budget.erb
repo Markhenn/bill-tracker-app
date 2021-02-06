@@ -1,0 +1,11 @@
+<form method="post" action="/change_budget">
+  <div>
+    <label>Your current budget is <%= @budget %></label>
+  </div>
+  <div>
+    <label>
+      New Budget: <input name="new_budget" value="<%= @new_budget || @budget %>">
+    </label>
+  </div>
+  <button type="submit">Change Budget</button>
+</form>

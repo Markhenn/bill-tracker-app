@@ -1,0 +1,15 @@
+<!doctype html>
+<html>
+  <title>Bill Tracker</title>
+  <%# <link rel="stylesheet" href="/stylesheets/cms.css"> %>
+
+  <body>
+    <% if session[:message] %>
+      <p><%= session.delete(:message) %></p>
+    <% end %>
+
+    <%= yield %>
+    <hr>
+    <p>Current User: <%= session[:username] || 'logged out' %></p>
+  </body>
+</html>

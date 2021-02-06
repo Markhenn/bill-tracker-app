@@ -1,0 +1,47 @@
+<h2>Your monthly budget is: <%= @budget %></h2>
+
+<a href="/change_budget">Change Budget</a>
+
+<div>
+  <h2>Add a bill:</h2>
+  <form method="post" action="/add_bill">
+    <div>
+      <label for="date">Date:
+        <input name="date" type="date">
+      </label>
+    </div>
+    <div>
+      <label for="amount">Amount:
+        <input name="amount">
+      </label>
+    </div>
+    <div>
+      <label for="vendor">Vendor:
+        <input name="vendor">
+      </label>
+    </div>
+    <button type="submit">Add Bill</button>
+  </form>
+</div>
+
+<div>
+  <h2>All Bills</h2>
+  <% @spending.each do |year, months| %>
+    <h3><%= year %></h3>
+    <% months.each do |month, values| %>
+      <h4><%= Date.strptime(month.to_s, '%m').strftime('%B') %></h4>
+      <% values.each do |key, bills| %>
+        <% next if key == :monthly_budget %>
+        <% bills.each do |bill| %>
+          <p>
+          <% bill.each do |key, value| %>
+            <% next if key == :id %>
+            <%= "#{key.capitalize}: #{value}" %>
+          <% end %>
+          </p>
+        <% end %>
+      <% end %>
+    <% end %>
+  <% end %>
+</div>
+
