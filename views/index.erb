@@ -7,17 +7,17 @@
   <form method="post" action="/add_bill">
     <div>
       <label for="date">Date:
-        <input name="date" type="date">
+        <input name="date" type="date" value="<%= todays_date %>">
       </label>
     </div>
     <div>
       <label for="amount">Amount:
-        <input name="amount">
+        <input name="amount" value="<%= @amount %>">
       </label>
     </div>
     <div>
       <label for="vendor">Vendor:
-        <input name="vendor">
+        <input name="vendor" value="<%= @vendor %>">
       </label>
     </div>
     <button type="submit">Add Bill</button>
@@ -26,20 +26,18 @@
 
 <div>
   <h2>All Bills</h2>
-  <% @spending.each do |year, months| %>
+  <% sort_hash_on_key(@spending) do |year, months| %>
     <h3><%= year %></h3>
-    <% months.each do |month, values| %>
-      <h4><%= Date.strptime(month.to_s, '%m').strftime('%B') %></h4>
-      <% values.each do |key, bills| %>
-        <% next if key == :monthly_budget %>
-        <% bills.each do |bill| %>
-          <p>
-          <% bill.each do |key, value| %>
-            <% next if key == :id %>
-            <%= "#{key.capitalize}: #{value}" %>
-          <% end %>
-          </p>
+    <% sort_hash_on_key(months) do |month, values| %>
+      <h4><%= full_month_name(month, year) %></h4>
+      <p>The monthly budget is: <%= values[:monthly_budget] %></p>
+      <% sort_bills(values[:bills]) do |bill| %>
+        <p>
+        <% bill.each do |key, value| %>
+          <% next if key == :id %>
+          <%= "#{key.capitalize}: #{value}" %>
         <% end %>
+        </p>
       <% end %>
     <% end %>
   <% end %>

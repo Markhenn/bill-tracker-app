@@ -10,6 +10,29 @@ def data_path
   end
 end
 
+helpers do
+  def todays_date
+    Date.today.strftime('%Y-%m-%d')
+  end
+
+  def full_month_name(month, year)
+    "#{Date.strptime(month.to_s, '%m').strftime('%B')} #{year}"
+  end
+
+  def sort_hash_on_key(hash, &block)
+    hash_sorted = hash.sort_by { |hash, _| hash }.reverse
+    hash_sorted.each { |hash| yield(hash) }
+  end
+
+  def sort_bills(bills, &block)
+    bills_sorted = bills.sort do |a, b|
+      parse_date(b[:date]) <=> parse_date(a[:date])
+    end
+
+    bills_sorted.each { |bill| yield(bill) }
+  end
+end
+
 def user_path
   user_file = "#{session[:username]}.yaml"
   File.join(data_path, user_file)
@@ -26,12 +49,24 @@ def verify_login
   session[:username] = 'admin'
 end
 
+def valid_amount?(amount)
+  amount =~ /\A[+-]?\d+\.?\d{0,2}\z/
+end
+
+def valid_vendor?(vendor)
+  vendor =~ /\w{2,}/
+end
+
 def valid_budget?(budget)
-  budget.to_i >= 0 && budget =~ /\A+?\d+\z/
+  budget =~ /\A+?\d+\.?\d{0,2}\z/
 end
 
 def write_user_yaml
   File.write(user_path, @user_data.to_yaml)
+end
+
+def parse_date(date_string)
+  Date.strptime(date_string, '%Y-%m-%d')
 end
 
 configure do
@@ -73,25 +108,39 @@ post '/change_budget' do
 end
 
 post '/add_bill' do
-  date = Date.strptime(params[:date], '%Y-%m-%d')
-  id = DateTime.now.strftime('%Y%m%d%H%M%S')
+  date = parse_date(params[:date])
 
-  spending = @user_data[:spending]
-  spending[date.year] = {} if spending[date.year].nil?
+  error = nil
+  error = 'The amount needs to be a decimal number (ie. 12.34)' unless valid_amount?(params[:amount])
+  error = 'The vendor needs to have at least two chars' unless valid_vendor?(params[:vendor])
 
-  year = spending[date.year]
-  default_budget = @user_data[:default_budget]
-  year[date.month] = {monthly_budget: default_budget, bills: []} if year[date.month].nil?
+  if error
+    @spending = @user_data[:spending]
+    @date = params[:date]
+    @vendor = params[:vendor]
+    @amount = params[:amount]
+    session[:message] = error
+    status 422
+    erb :index
+  else
+    id = DateTime.now.strftime('%Y%m%d%H%M%S')
+    spending = @user_data[:spending]
+    spending[date.year] = {} if spending[date.year].nil?
 
-  @user_data[:spending][date.year][date.month][:bills] << {
-    id: id,
-    date: params[:date],
-    vendor: params[:vendor],
-    amount: params[:amount]
-  }
+    year = spending[date.year]
+    default_budget = @user_data[:default_budget]
+    year[date.month] = {monthly_budget: default_budget, bills: []} if year[date.month].nil?
 
-  write_user_yaml
+    @user_data[:spending][date.year][date.month][:bills] << {
+      id: id,
+      date: params[:date],
+      vendor: params[:vendor],
+      amount: params[:amount]
+    }
 
-  session[:message] = 'The bill has been added'
-  redirect '/'
+    write_user_yaml
+
+    session[:message] = 'The bill has been added'
+    redirect '/'
+  end
 end
