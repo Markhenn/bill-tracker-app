@@ -3,7 +3,7 @@ require 'sinatra/reloader' if development?
 require 'yaml'
 
 def data_path
-  if ENV['RACK_TEST'] == 'test'
+  if ENV['RACK_ENV'] == 'test'
     File.expand_path('../test/data', __FILE__)
   else
     File.expand_path('../data', __FILE__)
@@ -42,6 +42,10 @@ def load_user
   YAML.load(File.read(user_path))
 end
 
+def write_user_yaml
+  File.write(user_path, @user_data.to_yaml)
+end
+
 def verify_login
   # check if there is a session[:username] not nil
   # if nil then user has  to log in
@@ -49,8 +53,22 @@ def verify_login
   session[:username] = 'admin'
 end
 
+def all_bills
+  bills = []
+  @user_data[:spending].each do |_, months|
+    months.each do |_, values|
+      values.each do |key, values|
+        if key == :bills
+          bills += values
+        end
+      end
+    end
+  end
+  bills
+end
+
 def valid_amount?(amount)
-  amount =~ /\A[+-]?\d+\.?\d{0,2}\z/
+  amount =~ /\A[+-]?\d+(\.\d{1,2})?\z/
 end
 
 def valid_vendor?(vendor)
@@ -58,11 +76,7 @@ def valid_vendor?(vendor)
 end
 
 def valid_budget?(budget)
-  budget =~ /\A+?\d+\.?\d{0,2}\z/
-end
-
-def write_user_yaml
-  File.write(user_path, @user_data.to_yaml)
+  budget =~ /\A+?\d+(\.?\d{1,2})\z/
 end
 
 def parse_date(date_string)
@@ -82,7 +96,6 @@ end
 get '/' do 
   @budget = @user_data[:default_budget]
   @spending = @user_data[:spending]
-  # p @user_data
   erb :index
 end
 
@@ -97,7 +110,7 @@ post '/change_budget' do
   unless valid_budget?(new_budget)
     @new_budget = new_budget
     status 422
-    session[:message] = 'The new budget needs to be equal 0 or bigger'
+    session[:message] = 'The new budget needs to be >= 0 but can be a float'
     erb :change_budget
   else
     @user_data[:default_budget] = new_budget
@@ -141,6 +154,25 @@ post '/add_bill' do
     write_user_yaml
 
     session[:message] = 'The bill has been added'
+    redirect '/'
+  end
+end
+
+post '/:id/delete' do
+  year = params[:year].to_i
+  month = params[:month].to_i
+  id = params[:id]
+  bills = all_bills
+
+  bill_index = bills.index { |bill| bill[:id] == id }
+
+  unless bill_index
+    session[:message] = "The bill does not exist"
+    redirect '/', 404
+  else
+    @user_data[:spending][year][month][:bills].delete_if { |bill| bill[:id] == id }
+    write_user_yaml
+    session[:message] = "The bill has been deleted"
     redirect '/'
   end
 end

@@ -32,12 +32,13 @@
       <h4><%= full_month_name(month, year) %></h4>
       <p>The monthly budget is: <%= values[:monthly_budget] %></p>
       <% sort_bills(values[:bills]) do |bill| %>
-        <p>
-        <% bill.each do |key, value| %>
-          <% next if key == :id %>
-          <%= "#{key.capitalize}: #{value}" %>
-        <% end %>
-        </p>
+        <form method="post" action="/<%= bill[:id] %>/delete?year=<%= year %>&month=<%= month %>">
+          <% bill.each do |key, value| %>
+            <% next if key == :id %>
+            <label for="delete"><%= "#{key.capitalize}: #{value}" %></label>
+          <% end %>
+          <button name="delete" type="submit">Delete Bill</button>
+        </form>
       <% end %>
     <% end %>
   <% end %>

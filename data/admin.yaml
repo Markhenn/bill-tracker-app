@@ -1,0 +1,16 @@
+---
+:name: admin
+:default_budget: '500'
+:spending:
+  2021:
+    2:
+      :monthly_budget: '500'
+      :bills:
+      - :id: '20210206135254'
+        :date: '2021-02-05'
+        :vendor: Apple
+        :amount: '100'
+      - :id: '20210212065725'
+        :date: '2021-02-12'
+        :vendor: EDEKA
+        :amount: '50'

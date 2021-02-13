@@ -84,7 +84,7 @@ class BillTrackerTest < MiniTest::Test
     post '/change_budget', { new_budget: -1 }, admin_session
 
     assert_equal 422, last_response.status
-    assert_includes last_response.body, 'The new budget needs to be equal 0 or bigger'
+    assert_includes last_response.body, 'The new budget needs to be >= 0 but can be a float'
   end
 
   def test_valid_budget
@@ -122,10 +122,34 @@ class BillTrackerTest < MiniTest::Test
 
   def test_invalid_vendor_on_add_bill
     bill = {date: '2021-01-01', amount: '3.33', vendor: 'D' }
-    post '/add_bill', bill, admin_session
 
+    post '/add_bill', bill, admin_session
     assert_includes last_response.body, 'The vendor needs to have at least two chars'
     refute_includes last_response.body, 'Date: 2021-01-01'
     refute_includes last_response.body, 'Amount: 3.33'
+  end
+
+  def test_delete_bill
+    bill = {date: '2021-01-01', amount: '3.33', vendor: 'weird_vendor' }
+    post '/add_bill', bill, admin_session
+
+    get '/'
+    assert_includes last_response.body, 'Vendor: weird_vendor'
+
+    bill_id = last_response.body.scan(/\d{14}/).last
+
+    post "/#{bill_id}/delete?year=2021&month=1"
+    assert_equal 'The bill has been deleted', session[:message]
+
+    assert_equal last_response.status, 302
+    get last_response['Location']
+    refute_includes last_response.body, 'Vendor: weird_vendor'
+  end
+
+  def test_delete_non_existing_bill
+    post "/000/delete?year=2021&month=1"
+    assert_equal 'The bill does not exist', session[:message]
+
+    assert_equal last_response.status, 404
   end
 end

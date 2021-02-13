@@ -6,7 +6,7 @@ An app that keeps track of monthly bills
 ## Features
 <!-- 1. user can define a monthly budget -->
 <!-- 2. user cann add values from bills he received -->
-2.1. user can delete bills
+<!-- 2.1. user can delete bills -->
 2.2 user can change monthly budget
 3. user can set up categories he wants to spend money on
 4. display remaining spending money for the month
@@ -14,19 +14,23 @@ An app that keeps track of monthly bills
 6. user has to log in before he can use the app
 7. each user tracks his own values and can only see those
 
+use rubocop to test files
+
 ## Implementation
-go over test bill tracker and add to snippets lab
+
 
 
 ## Tests
-
-
 
 
 ## HTML
 
 
 ## Ruby
+
+
+
+
 
 ### how is the budget tracked?
 in a yaml file for each user
