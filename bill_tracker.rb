@@ -92,12 +92,12 @@ def parse_date(date_string)
 end
 
 def sum_of_bills(bills)
-  bills.reduce(0) { |sum, bill| sum += bill[:amount].to_f }
+  bills.reduce(0) { |sum, bill| sum += bill[:amount].to_f }.round(2)
 end
 
 def determine_difference_message(values)
   sum = sum_of_bills(values[:bills])
-  difference = values[:monthly_budget].to_f - sum
+  difference = (values[:monthly_budget].to_f - sum).round(2)
 
   if difference > 0
     "You still have #{difference} left to spend"

@@ -44,3 +44,7 @@
         :date: '2021-03-10'
         :vendor: Lego Firestation
         :amount: '59'
+      - :id: '20210215072459'
+        :date: '2021-03-19'
+        :vendor: REWE
+        :amount: '43.78'
