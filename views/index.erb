@@ -30,7 +30,7 @@
     <h3><%= year %></h3>
     <% sort_hash_on_key(months) do |month, values| %>
       <h4><%= full_month_name(month, year) %></h4>
-      <p>The monthly budget is: <%= values[:monthly_budget] %></p>
+      <p><%= show_monthly_summary(values) %></p>
       <% sort_bills(values[:bills]) do |bill| %>
         <form method="post" action="/<%= bill[:id] %>/delete?year=<%= year %>&month=<%= month %>">
           <% bill.each do |key, value| %>

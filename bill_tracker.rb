@@ -31,6 +31,14 @@ helpers do
 
     bills_sorted.each { |bill| yield(bill) }
   end
+
+  def show_monthly_summary(value_hash)
+    m_budget = "The monthly budget is: #{value_hash[:monthly_budget]}"
+
+    sum = "Sum of bills: #{sum_of_bills(value_hash[:bills])}"
+
+    [m_budget, sum, determine_difference_message(value_hash)].join("</br>")
+  end
 end
 
 def user_path
@@ -81,6 +89,23 @@ end
 
 def parse_date(date_string)
   Date.strptime(date_string, '%Y-%m-%d')
+end
+
+def sum_of_bills(bills)
+  bills.reduce(0) { |sum, bill| sum += bill[:amount].to_f }
+end
+
+def determine_difference_message(values)
+  sum = sum_of_bills(values[:bills])
+  difference = values[:monthly_budget].to_f - sum
+
+  if difference > 0
+    "You still have #{difference} left to spend"
+  elsif difference < 0
+    "You have a deficit of #{difference}"
+  else
+    'Your budget has been completely consumed'
+  end
 end
 
 configure do

@@ -80,6 +80,22 @@ class BillTrackerTest < MiniTest::Test
     assert_includes last_response.body, 'Date: 2021-02-05'
   end
 
+  def test_index_money_left_in_a_month
+    get '/', { }, admin_session
+
+    assert_includes last_response.body, 'Sum of bills: 100'
+    assert_includes last_response.body, 'You still have 400 left to spend'
+  end
+
+  def test_index_monthly_deficit
+    bill = {date: '2021-01-01', amount: '500', vendor: 'DM' }
+    post '/add_bill', bill, admin_session
+    get last_response['Location']
+
+    assert_includes last_response.body, 'Sum of bills: 600'
+    assert_includes last_response.body, 'You have a deficit of 100'
+  end
+
   def test_invalid_budget
     post '/change_budget', { new_budget: -1 }, admin_session
 

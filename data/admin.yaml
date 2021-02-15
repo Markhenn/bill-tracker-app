@@ -1,6 +1,6 @@
 ---
 :name: admin
-:default_budget: '500'
+:default_budget: '600'
 :spending:
   2021:
     2:
@@ -14,3 +14,33 @@
         :date: '2021-02-12'
         :vendor: EDEKA
         :amount: '50'
+      - :id: '20210215061440'
+        :date: '2021-02-15'
+        :vendor: Big Bill
+        :amount: '200'
+      - :id: '20210215061510'
+        :date: '2021-02-15'
+        :vendor: Another bill
+        :amount: '25'
+      - :id: '20210215061740'
+        :date: '2021-02-15'
+        :vendor: Even out
+        :amount: '125'
+    1:
+      :monthly_budget: '800'
+      :bills:
+      - :id: '20210215061628'
+        :date: '2021-01-05'
+        :vendor: EDEKA
+        :amount: '77.9'
+    3:
+      :monthly_budget: '600'
+      :bills:
+      - :id: '20210215061659'
+        :date: '2021-03-02'
+        :vendor: Computer
+        :amount: '699.99'
+      - :id: '20210215061810'
+        :date: '2021-03-10'
+        :vendor: Lego Firestation
+        :amount: '59'
