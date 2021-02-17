@@ -1,0 +1,15 @@
+<h2>Please log into the App</h2>
+<form method="post" action="/login">
+  <div>
+  <label for="username">Username: 
+    <input name="username" id="username" value="<%= @username %>">
+  </label>
+  </div>
+  <div>
+  <label for="password">Password: 
+    <input name="password" id="password" value="<%= @password %>">
+  </label>
+  </div>
+  <button type="submit">Log In</button>
+</form>
+<p>If you don't have an account <a href="/signup">Sign up</a></p>

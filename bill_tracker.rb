@@ -2,6 +2,14 @@ require 'sinatra'
 require 'sinatra/reloader' if development?
 require 'yaml'
 
+def config_path
+  if ENV['RACK_ENV'] == 'test'
+    File.expand_path('../test', __FILE__)
+  else
+    File.expand_path('..', __FILE__)
+  end
+end
+
 def data_path
   if ENV['RACK_ENV'] == 'test'
     File.expand_path('../test/data', __FILE__)
@@ -54,11 +62,16 @@ def write_user_yaml
   File.write(user_path, @user_data.to_yaml)
 end
 
-def verify_login
+def logged_in?
   # check if there is a session[:username] not nil
   # if nil then user has  to log in
   # the :username ist the name: in the yaml file
-  session[:username] = 'admin'
+  # session[:username] = 'admin'
+  if session[:username]
+    @user_data = load_user
+  else
+    redirect '/login'
+  end
 end
 
 def all_bills
@@ -114,22 +127,23 @@ configure do
 end
 
 before do
-  verify_login
-  @user_data = load_user
 end
 
 get '/' do 
+  logged_in?
   @budget = @user_data[:default_budget]
   @spending = @user_data[:spending]
   erb :index
 end
 
 get '/change_budget' do
+  logged_in?
   @budget = @user_data[:default_budget]
   erb :change_budget
 end
 
 post '/change_budget' do
+  logged_in?
   new_budget = params[:new_budget]
 
   unless valid_budget?(new_budget)
@@ -146,6 +160,7 @@ post '/change_budget' do
 end
 
 post '/add_bill' do
+  logged_in?
   date = parse_date(params[:date])
 
   error = nil
@@ -184,6 +199,7 @@ post '/add_bill' do
 end
 
 post '/:id/delete' do
+  logged_in?
   year = params[:year].to_i
   month = params[:month].to_i
   id = params[:id]
@@ -200,4 +216,18 @@ post '/:id/delete' do
     session[:message] = "The bill has been deleted"
     redirect '/'
   end
+end
+
+get '/login' do
+  erb :login
+end
+
+post '/login' do
+
+  redirect '/'
+end
+
+post 'logout' do
+  logged_in?
+
 end

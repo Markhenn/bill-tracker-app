@@ -30,12 +30,19 @@ class BillTrackerTest < MiniTest::Test
 
   def setup
     FileUtils.mkdir(data_path)
-    user_path = File.join(data_path, '/admin.yaml')
+    user_path = File.join(data_path, 'admin.yaml')
     File.write(user_path, create_dummy_user.to_yaml)
+
+    users_path = File.join(config_path, 'users.yaml')
+    File.open(users_path, 'a') do |file|
+      file.puts '---'
+      file.puts 'admin: $2a$12$fd0HQjk34JvSuvZr77eIMuzCtGtF4VuuDCzPrXt4VOmM2wwlgIhCm'
+    end
   end
 
   def teardown
     FileUtils.rm_r(data_path)
+    File.delete(File.join(config_path, 'users.yaml'))
   end
 
   def app
@@ -172,9 +179,33 @@ class BillTrackerTest < MiniTest::Test
   end
 
   def test_delete_non_existing_bill
-    post "/000/delete?year=2021&month=1"
-    assert_equal 'The bill does not exist', session[:message]
+    post "/000/delete?year=2021&month=1", {}, admin_session
 
-    assert_equal last_response.status, 404
+    get last_response['Location']
+    assert_includes last_response.body, 'The bill does not exist'
+    assert_equal 404, last_response.status
+  end
+
+  def test_log_in_page
+    get "/login"
+
+    assert_equal 200, last_response.status
+    assert_includes last_response.body, 'Username:'
+    assert_includes last_response.body, 'Password:'
+    assert_includes last_response.body, 'Log In</button>'
+    assert_includes last_response.body, 'Sign up</a>'
+  end
+
+  def test_successful_log_in
+    post '/login', username: 'admin', password: '$2a$12$fd0HQjk34JvSuvZr77eIMuzCtGtF4VuuDCzPrXt4VOmM2wwlgIhCm'
+
+    assert_equal 'Welcome admin', session[:message]
+  end
+
+  def test_invalid_login
+    post '/login', username: 'admin', password: '$2af$fd0HQjk34JvSuvZr77eIMuzCtGtF4VuuDCzPrXt4VOmM2wwlgIhCm'
+
+    assert_equal 404, last_response.status
+    assert_includes last_response.body, 'Username / Password invalid'
   end
 end

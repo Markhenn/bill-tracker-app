@@ -17,21 +17,53 @@ xx 3. user can set up categories he wants to spend money on
 use rubocop to test files
 
 ## Implementation
+create a login page
+create a sign up page
 
+put check in before to login
+
+create sign out button on index
+
+login page
+  contains email and password fiedsl
+  button log in
+  button for sign up as well
 
 
 
 ## Tests
+Test loggin in
+
+post to /login, username: 'admin', pw: xxx
+  session message -> Welcome admin
+  redirect to /
+
+Test not succesful login
+  post to login 
+    in body session message -> Username / password invalid
+    status 404
 
 
 
-## HTML
-
+# HTML
+nothing
 
 ## Ruby
+set up users.yaml file and for test
 
+post login
+  read array of hashes from users.yaml
+  check if username exists in database
+  check if pw hashed matches the saved one for username
 
+  yes
+    welcome admin
+    set session[:username] to admin
+    redirect /
 
+  no
+    message username password invalid
+    erb /login
 
 
 ### how is the budget tracked?
