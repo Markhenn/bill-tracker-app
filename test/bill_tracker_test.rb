@@ -180,10 +180,10 @@ class BillTrackerTest < MiniTest::Test
 
   def test_delete_non_existing_bill
     post "/000/delete?year=2021&month=1", {}, admin_session
+    assert_equal 422, last_response.status
 
     get last_response['Location']
     assert_includes last_response.body, 'The bill does not exist'
-    assert_equal 404, last_response.status
   end
 
   def test_log_in_page

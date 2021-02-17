@@ -209,7 +209,7 @@ post '/:id/delete' do
 
   unless bill_index
     session[:message] = "The bill does not exist"
-    redirect '/', 404
+    redirect '/', 422
   else
     @user_data[:spending][year][month][:bills].delete_if { |bill| bill[:id] == id }
     write_user_yaml
@@ -230,4 +230,9 @@ end
 post 'logout' do
   logged_in?
 
+end
+
+not_found do
+  session[:message] = 'This path does not exist'
+  redirect '/'
 end
