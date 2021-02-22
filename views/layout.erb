@@ -12,7 +12,10 @@
     <%= yield %>
     <% if session[:username] %>
       <hr>
-      <p>Current User: <%= session[:username] %></p>
-  <% end %>
+      <form method="post" action="/logout">
+        <label>Current User: <%= session[:username] %></label>
+        <button type="submit">Log Out</button>
+      </form>
+    <% end %>
   </body>
 </html>

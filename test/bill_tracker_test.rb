@@ -193,19 +193,104 @@ class BillTrackerTest < MiniTest::Test
     assert_includes last_response.body, 'Username:'
     assert_includes last_response.body, 'Password:'
     assert_includes last_response.body, 'Log In</button>'
-    assert_includes last_response.body, 'Sign up</a>'
+    assert_includes last_response.body, 'Sign Up</a>'
+  end
+
+  def test_sign_up_page
+    get "/signup"
+
+    assert_equal 200, last_response.status
+    assert_includes last_response.body, 'Username:'
+    assert_includes last_response.body, 'Password:'
+    assert_includes last_response.body, 'Sign Up</button>'
+    assert_includes last_response.body, 'Log In</a>'
   end
 
   def test_successful_log_in
-    post '/login', username: 'admin', password: '$2a$12$fd0HQjk34JvSuvZr77eIMuzCtGtF4VuuDCzPrXt4VOmM2wwlgIhCm'
+    post '/login', username: 'admin', password: 'test'
 
+    assert_equal 'admin', session[:username]
     assert_equal 'Welcome admin', session[:message]
   end
 
   def test_invalid_login
-    post '/login', username: 'admin', password: '$2af$fd0HQjk34JvSuvZr77eIMuzCtGtF4VuuDCzPrXt4VOmM2wwlgIhCm'
+    post '/login', username: 'admin', password: 'test1'
 
-    assert_equal 404, last_response.status
+    assert_equal 422, last_response.status
     assert_includes last_response.body, 'Username / Password invalid'
+  end
+
+  def test_logout
+    post '/logout', {}, admin_session
+
+    assert_equal 'You have been logged out', session[:message]
+    assert_nil session[:username]
+  end
+
+  def test_signup_successful
+    post '/signup', username: 'mark', password: 'Test1'
+
+    assert_equal 'Welcome mark, please set a default budget below.', session[:message]
+    assert_equal 302, last_response.status
+    assert_equal 'mark', session[:username]
+    assert File.exist?(File.join(data_path, 'mark.yaml'))
+
+    users = load_users_file
+    assert_includes users.keys, 'mark'
+  end
+
+  def test_signup_wrong_username_already_taken_case_insensitive
+    post '/signup', username: 'Admin', password: 'Test1'
+
+    assert_equal 422, last_response.status
+    refute_equal 'admin', session[:username]
+    assert_includes last_response.body, 'This username has already been taken'
+  end
+
+  def test_signup_wrong_username_already_taken
+    post '/signup', username: 'admin', password: 'Test1'
+
+    assert_equal 422, last_response.status
+    refute_equal 'admin', session[:username]
+    assert_includes last_response.body, 'This username has already been taken'
+  end
+
+  def test_signup_wrong_username_invalid_chars
+    post '/signup', username: 'mark.', password: 'Test1'
+
+    assert_equal 422, last_response.status
+    refute_equal 'mark.', session[:username]
+    assert_includes last_response.body, 'Your username must contain at least to letters or numbers'
+  end
+
+  def test_signup_wrong_username_short
+    post '/signup', username: 'm', password: 'Test1'
+
+    assert_equal 422, last_response.status
+    refute_equal 'm', session[:username]
+    assert_includes last_response.body, 'Your username must contain at least to letters or numbers'
+  end
+
+  def test_signup_wrong_password_too_short
+    post '/signup', username: 'mark', password: 'Te1'
+
+    assert_equal 422, last_response.status
+    refute_equal 'mark', session[:username]
+    assert_includes last_response.body, 'The password needs to contain at least 4 chars'
+  end
+
+  def test_signup_wrong_password_no_uppercase
+    post '/signup', username: 'mark', password: 'test1'
+
+    assert_equal 422, last_response.status
+    refute_equal 'mark', session[:username]
+    assert_includes last_response.body, 'The password has to have at least 1 upper case letter'
+  end
+  def test_signup_wrong_password_no_number
+    post '/signup', username: 'mark', password: 'Test'
+
+    assert_equal 422, last_response.status
+    refute_equal 'mark', session[:username]
+    assert_includes last_response.body, 'The password needs to have a least 1 number'
   end
 end

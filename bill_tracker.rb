@@ -1,6 +1,7 @@
 require 'sinatra'
 require 'sinatra/reloader' if development?
 require 'yaml'
+require 'bcrypt'
 
 def config_path
   if ENV['RACK_ENV'] == 'test'
@@ -49,29 +50,54 @@ helpers do
   end
 end
 
-def user_path
-  user_file = "#{session[:username]}.yaml"
+def user_path(username)
+  user_file = "#{username}.yaml"
   File.join(data_path, user_file)
 end
 
-def load_user
-  YAML.load(File.read(user_path))
+def load_user(username)
+  YAML.load(File.read(user_path(username)))
 end
 
-def write_user_yaml
-  File.write(user_path, @user_data.to_yaml)
+def write_user_yaml(username)
+  File.write(user_path(username), @user_data.to_yaml)
 end
 
 def logged_in?
-  # check if there is a session[:username] not nil
-  # if nil then user has  to log in
-  # the :username ist the name: in the yaml file
-  # session[:username] = 'admin'
   if session[:username]
-    @user_data = load_user
+    @user_data = load_user(session[:username])
   else
     redirect '/login'
   end
+end
+
+def add_user_to_file(username, password)
+  users = load_users_file
+  users[username] = BCrypt::Password.create(password)
+  write_users_file(users)
+end
+
+def load_users_file
+  file_path = File.join(config_path, "users.yaml")
+  YAML.load(File.read(file_path))
+end
+
+def write_users_file(users)
+  file_path = File.join(config_path, "users.yaml")
+  File.write(file_path, users.to_yaml)
+end
+
+def user_valid?(username, password)
+  user_file = load_users_file
+
+  user_file.any? do |user, pw|
+    user == username && BCrypt::Password.new(pw) == password
+  end
+end
+
+def create_user_file(username)
+  @user_data = { name: username, default_budget: '0', spending:{}}
+  write_user_yaml(username)
 end
 
 def all_bills
@@ -100,6 +126,26 @@ def valid_budget?(budget)
   budget =~ /\A+?\d+(\.?\d{1,2})\z/
 end
 
+def pw_error_message(password)
+  if password !~ /.{4,}/
+    'The password needs to contain at least 4 chars'
+  elsif  password !~ /\d+/
+    'The password needs to have a least 1 number'
+  elsif password !~ /[A-Z]+/
+    'The password has to have at least 1 upper case letter'
+  else
+    nil
+  end
+end
+
+def username_error_message(username)
+  if username !~ /\A\w{2,}\z/
+    'Your username must contain at least to letters or numbers'
+  elsif File.exist?(File.join(data_path, "#{username}.yaml"))
+    'This username has already been taken'
+  end
+end
+
 def parse_date(date_string)
   Date.strptime(date_string, '%Y-%m-%d')
 end
@@ -126,9 +172,6 @@ configure do
   set :sessions_secret, 'secret'
 end
 
-before do
-end
-
 get '/' do 
   logged_in?
   @budget = @user_data[:default_budget]
@@ -153,7 +196,7 @@ post '/change_budget' do
     erb :change_budget
   else
     @user_data[:default_budget] = new_budget
-    write_user_yaml
+    write_user_yaml(session[:username])
     session[:message] = 'The budget has been updated'
     redirect '/'
   end
@@ -191,7 +234,7 @@ post '/add_bill' do
       amount: params[:amount]
     }
 
-    write_user_yaml
+    write_user_yaml(session[:username])
 
     session[:message] = 'The bill has been added'
     redirect '/'
@@ -212,7 +255,7 @@ post '/:id/delete' do
     redirect '/', 422
   else
     @user_data[:spending][year][month][:bills].delete_if { |bill| bill[:id] == id }
-    write_user_yaml
+    write_user_yaml(session[:username])
     session[:message] = "The bill has been deleted"
     redirect '/'
   end
@@ -223,16 +266,50 @@ get '/login' do
 end
 
 post '/login' do
-
-  redirect '/'
+  username = params[:username].downcase
+  if user_valid?(username, params[:password])
+    session[:username] = username
+    session[:message] = "Welcome #{username}"
+    redirect '/'
+  else
+    session[:message] = 'Username / Password invalid'
+    status 422
+    erb :login
+  end
 end
 
-post 'logout' do
-  logged_in?
+post '/logout' do
+  session.delete(:username)
+  session[:message] = "You have been logged out"
 
+  redirect '/login'
+end
+
+get '/signup' do
+  erb :signup
+end
+
+post '/signup' do
+  @user = params[:username].downcase
+  pw = params[:password]
+
+  error_pw = pw_error_message(pw)
+  error_username = username_error_message(@user)
+
+  if error_pw || error_username
+    session[:message] = error_username || error_pw
+    status 422
+    erb :signup
+  else
+    add_user_to_file(@user, pw)
+    create_user_file(@user)
+    session[:username] = @user
+    session[:message] = "Welcome #{@user}, please set a default budget below."
+    redirect '/'
+  end
 end
 
 not_found do
-  session[:message] = 'This path does not exist'
+  session[:message] = 'Path not found :('
   redirect '/'
 end

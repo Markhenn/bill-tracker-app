@@ -11,60 +11,85 @@ xx 2.2 user can change monthly budget
 xx 3. user can set up categories he wants to spend money on
 <!-- 4. display remaining spending money for the month -->
 <!-- 5. display how much money was spend in a month or year -->
-6. user has to log in before he can use the app
+<!-- 6. user has to log in before he can use the app -->
 7. each user tracks his own values and can only see those
 
 use rubocop to test files
 
 ## Implementation
-create a login page
-create a sign up page
+sign up page
+  if a user doesnt have an accoun he can sign up through a button on the login
+    page
+  he needs to have a valid username
+    an email address
+  a password
+    at least 4 chars, an uppercase and a number
 
-put check in before to login
+  after sign up he is logged in
+  a default template is created
+    name -> username
+    default budget: 0
 
-create sign out button on index
-
-login page
-  contains email and password fiedsl
-  button log in
-  button for sign up as well
-
+  a welcome message is displayed
+    it should tell him to define a default budget
 
 
 ## Tests
-Test loggin in
+<!-- test successful sign up -->
+<!--   post sign up -> username: mark@test.de, password: Test1 -->
 
-post to /login, username: 'admin', pw: xxx
-  session message -> Welcome admin
-  redirect to /
+<!--   message welcome mark@test.de, please set a default budget below -->
+<!--   status 302 -->
+<!--   asswert session username -> mark@test.de -->
 
-Test not succesful login
-  post to login 
-    in body session message -> Username / password invalid
-    status 404
+<!-- test unsuccessful sign up username -->
+<!--   post sign up -> username: mark -->
 
+<!--   body -->    
+<!--   message, please use an email as a username --> 
+<!--   assert session username is nil -->
+<!--   status 422 -->
+
+<!-- test unsuccesssful sign up password -->
+<!--   post sign up -> mark@test.de, password test -->
+
+<!--   in body -->
+<!--   message the password needs to contain 4 chars and at least 1 uppercase and 1 -->
+<!--   number -->
+<!--   assert session username is nil -->
+<!--   status 422 -->
+
+
+<!-- create test that username does not already exist -->
 
 
 # HTML
-nothing
 
 ## Ruby
-set up users.yaml file and for test
+<!-- validate input -->
+<!--   username -->
+<!--   password -->
 
-post login
-  read array of hashes from users.yaml
-  check if username exists in database
-  check if pw hashed matches the saved one for username
+<!-- if error --> 
+<!--   show sign up page again -->
+<!--   422 -->
+<!--   with @username -->
+<!--   with error message -->
 
-  yes
-    welcome admin
-    set session[:username] to admin
-    redirect /
 
-  no
-    message username password invalid
-    erb /login
+<!-- load the users.yaml --> 
+<!-- create new password from username -->
+<!-- add username + password to hash -->
 
+<!-- write hash to users yaml -->
+
+<!-- create a new userfile in data with username.yaml from template -->
+<!--   set default budget zero -->
+<!--   set name to username -->
+
+<!-- set message to welcome username + intro message -->
+<!-- set session username to username -->
+<!-- redirect to index -->
 
 ### how is the budget tracked?
 in a yaml file for each user
