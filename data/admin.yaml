@@ -1,6 +1,6 @@
 ---
 :name: admin
-:default_budget: '600'
+:default_budget: '800'
 :spending:
   2021:
     2:
@@ -26,6 +26,10 @@
         :date: '2021-02-15'
         :vendor: Even out
         :amount: '125'
+      - :id: '20210224220546'
+        :date: '2021-02-24'
+        :vendor: Pillow
+        :amount: '89.9'
     1:
       :monthly_budget: '800'
       :bills:
@@ -48,3 +52,14 @@
         :date: '2021-03-19'
         :vendor: REWE
         :amount: '43.78'
+    4:
+      :monthly_budget: '800'
+      :bills:
+      - :id: '20210224221901'
+        :date: '2021-04-02'
+        :vendor: Starbucks
+        :amount: '15'
+      - :id: '20210224222118'
+        :date: '2021-04-26'
+        :vendor: KaDeWe
+        :amount: '105.9'

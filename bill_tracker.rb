@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'sinatra'
 require 'sinatra/reloader' if development?
 require 'yaml'
@@ -28,17 +30,17 @@ helpers do
     "#{Date.strptime(month.to_s, '%m').strftime('%B')} #{year}"
   end
 
-  def sort_hash_on_key(hash)
+  def sort_hash_on_key(hash, &block)
     hash_sorted = hash.sort_by { |hsh, _| hsh }.reverse
-    hash_sorted.each { |hsh| yield(hsh) }
+    hash_sorted.each(&block)
   end
 
-  def sort_bills(bills)
+  def sort_bills(bills, &block)
     bills_sorted = bills.sort do |a, b|
       parse_date(b[:date]) <=> parse_date(a[:date])
     end
 
-    bills_sorted.each { |bill| yield(bill) }
+    bills_sorted.each(&block)
   end
 
   def show_monthly_summary(value_hash)
@@ -56,7 +58,8 @@ def user_path(username)
 end
 
 def load_user(username)
-  YAML.load(File.read(user_path(username)))
+  # The [Symbol] makes sure that symbols are loaded, which would be disallowed
+  YAML.safe_load(File.read(user_path(username)), [Symbol])
 end
 
 def write_user_yaml(username)
@@ -79,7 +82,7 @@ end
 
 def load_users_file
   file_path = File.join(config_path, 'users.yaml')
-  YAML.load(File.read(file_path))
+  YAML.safe_load(File.read(file_path), [Symbol, BCrypt::Password])
 end
 
 def write_users_file(users)
