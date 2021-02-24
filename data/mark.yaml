@@ -1,4 +1,12 @@
 ---
 :name: mark
 :default_budget: '1200'
-:spending: {}
+:spending:
+  2021:
+    2:
+      :monthly_budget: '1200'
+      :bills:
+      - :id: '20210222103830'
+        :date: '2021-02-22'
+        :vendor: EDEKA
+        :amount: '34'

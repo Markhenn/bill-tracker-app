@@ -5,17 +5,17 @@ require 'bcrypt'
 
 def config_path
   if ENV['RACK_ENV'] == 'test'
-    File.expand_path('../test', __FILE__)
+    File.expand_path('test', __dir__)
   else
-    File.expand_path('..', __FILE__)
+    File.expand_path(__dir__)
   end
 end
 
 def data_path
   if ENV['RACK_ENV'] == 'test'
-    File.expand_path('../test/data', __FILE__)
+    File.expand_path('test/data', __dir__)
   else
-    File.expand_path('../data', __FILE__)
+    File.expand_path('data', __dir__)
   end
 end
 
@@ -28,12 +28,12 @@ helpers do
     "#{Date.strptime(month.to_s, '%m').strftime('%B')} #{year}"
   end
 
-  def sort_hash_on_key(hash, &block)
-    hash_sorted = hash.sort_by { |hash, _| hash }.reverse
-    hash_sorted.each { |hash| yield(hash) }
+  def sort_hash_on_key(hash)
+    hash_sorted = hash.sort_by { |hsh, _| hsh }.reverse
+    hash_sorted.each { |hsh| yield(hsh) }
   end
 
-  def sort_bills(bills, &block)
+  def sort_bills(bills)
     bills_sorted = bills.sort do |a, b|
       parse_date(b[:date]) <=> parse_date(a[:date])
     end
@@ -46,7 +46,7 @@ helpers do
 
     sum = "Sum of bills: #{sum_of_bills(value_hash[:bills])}"
 
-    [m_budget, sum, determine_difference_message(value_hash)].join("</br>")
+    [m_budget, sum, determine_difference_message(value_hash)].join('</br>')
   end
 end
 
@@ -78,12 +78,12 @@ def add_user_to_file(username, password)
 end
 
 def load_users_file
-  file_path = File.join(config_path, "users.yaml")
+  file_path = File.join(config_path, 'users.yaml')
   YAML.load(File.read(file_path))
 end
 
 def write_users_file(users)
-  file_path = File.join(config_path, "users.yaml")
+  file_path = File.join(config_path, 'users.yaml')
   File.write(file_path, users.to_yaml)
 end
 
@@ -96,18 +96,16 @@ def user_valid?(username, password)
 end
 
 def create_user_file(username)
-  @user_data = { name: username, default_budget: '0', spending:{}}
+  @user_data = { name: username, default_budget: '0', spending: {} }
   write_user_yaml(username)
 end
 
 def all_bills
   bills = []
   @user_data[:spending].each do |_, months|
-    months.each do |_, values|
-      values.each do |key, values|
-        if key == :bills
-          bills += values
-        end
+    months.each do |_, content|
+      content.each do |key, values|
+        bills += values if key == :bills
       end
     end
   end
@@ -122,8 +120,8 @@ def valid_vendor?(vendor)
   vendor =~ /\w{2,}/
 end
 
-def valid_budget?(budget)
-  budget =~ /\A+?\d+(\.?\d{1,2})\z/
+def invalid_budget?(budget)
+  budget !~ /\A+?\d+(\.?\d{1,2})\z/
 end
 
 def pw_error_message(password)
@@ -133,8 +131,6 @@ def pw_error_message(password)
     'The password needs to have a least 1 number'
   elsif password !~ /[A-Z]+/
     'The password has to have at least 1 upper case letter'
-  else
-    nil
   end
 end
 
@@ -151,20 +147,32 @@ def parse_date(date_string)
 end
 
 def sum_of_bills(bills)
-  bills.reduce(0) { |sum, bill| sum += bill[:amount].to_f }.round(2)
+  bills.reduce(0) { |sum, bill| sum + bill[:amount].to_f }.round(2)
 end
 
 def determine_difference_message(values)
   sum = sum_of_bills(values[:bills])
   difference = (values[:monthly_budget].to_f - sum).round(2)
 
-  if difference > 0
+  if difference.positive?
     "You still have #{difference} left to spend"
-  elsif difference < 0
+  elsif difference.negative?
     "You have a deficit of #{difference}"
   else
     'Your budget has been completely consumed'
   end
+end
+
+def get_date_data(html_date)
+  date = parse_date(html_date)
+  spending = @user_data[:spending]
+  spending[date.year] = {} if spending[date.year].nil?
+
+  year = spending[date.year]
+
+  default_budget = @user_data[:default_budget]
+  year[date.month] = { monthly_budget: default_budget, bills: [] } if year[date.month].nil?
+  date
 end
 
 configure do
@@ -172,7 +180,7 @@ configure do
   set :sessions_secret, 'secret'
 end
 
-get '/' do 
+get '/' do
   logged_in?
   @budget = @user_data[:default_budget]
   @spending = @user_data[:spending]
@@ -189,7 +197,7 @@ post '/change_budget' do
   logged_in?
   new_budget = params[:new_budget]
 
-  unless valid_budget?(new_budget)
+  if invalid_budget?(new_budget)
     @new_budget = new_budget
     status 422
     session[:message] = 'The new budget needs to be >= 0 but can be a float'
@@ -204,7 +212,6 @@ end
 
 post '/add_bill' do
   logged_in?
-  date = parse_date(params[:date])
 
   error = nil
   error = 'The amount needs to be a decimal number (ie. 12.34)' unless valid_amount?(params[:amount])
@@ -219,16 +226,10 @@ post '/add_bill' do
     status 422
     erb :index
   else
-    id = DateTime.now.strftime('%Y%m%d%H%M%S')
-    spending = @user_data[:spending]
-    spending[date.year] = {} if spending[date.year].nil?
-
-    year = spending[date.year]
-    default_budget = @user_data[:default_budget]
-    year[date.month] = {monthly_budget: default_budget, bills: []} if year[date.month].nil?
+    date = get_date_data(params[:date])
 
     @user_data[:spending][date.year][date.month][:bills] << {
-      id: id,
+      id: DateTime.now.strftime('%Y%m%d%H%M%S'),
       date: params[:date],
       vendor: params[:vendor],
       amount: params[:amount]
@@ -250,13 +251,13 @@ post '/:id/delete' do
 
   bill_index = bills.index { |bill| bill[:id] == id }
 
-  unless bill_index
-    session[:message] = "The bill does not exist"
+  if !bill_index
+    session[:message] = 'The bill does not exist'
     redirect '/', 422
   else
     @user_data[:spending][year][month][:bills].delete_if { |bill| bill[:id] == id }
     write_user_yaml(session[:username])
-    session[:message] = "The bill has been deleted"
+    session[:message] = 'The bill has been deleted'
     redirect '/'
   end
 end
@@ -280,7 +281,7 @@ end
 
 post '/logout' do
   session.delete(:username)
-  session[:message] = "You have been logged out"
+  session[:message] = 'You have been logged out'
 
   redirect '/login'
 end
