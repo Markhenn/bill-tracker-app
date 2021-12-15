@@ -26,6 +26,7 @@ helpers do
     Date.today.strftime('%Y-%m-%d')
   end
 
+
   def full_month_name(month, year)
     "#{Date.strptime(month.to_s, '%m').strftime('%B')} #{year}"
   end
