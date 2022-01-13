@@ -1,46 +1,4 @@
-<h2>Your monthly budget is: <%= @budget %></h2>
-
-<a href="/change_budget">Change Budget</a>
-
 <div>
-  <h2>Add a bill:</h2>
-  <form method="post" action="/add_bill">
-    <div>
-      <label for="date">Date:
-        <input name="date" type="date" value="<%= todays_date %>">
-      </label>
-    </div>
-    <div>
-      <label for="amount">Amount:
-        <input name="amount" value="<%= @amount %>">
-      </label>
-    </div>
-    <div>
-      <label for="vendor">Vendor:
-        <input name="vendor" value="<%= @vendor %>">
-      </label>
-    </div>
-    <button type="submit">Add Bill</button>
-  </form>
+  <h2>Budgets</h2>
+  <%# Here come the monthly budgets with categories %>
 </div>
-
-<div>
-  <h2>All Bills</h2>
-  <% sort_hash_on_key(@spending) do |year, months| %>
-    <h3><%= year %></h3>
-    <% sort_hash_on_key(months) do |month, values| %>
-      <h4><%= full_month_name(month, year) %></h4>
-      <p><%= show_monthly_summary(values) %></p>
-      <% sort_bills(values[:bills]) do |bill| %>
-        <form method="post" action="/<%= bill[:id] %>/delete?year=<%= year %>&month=<%= month %>">
-          <% bill.each do |key, value| %>
-            <% next if key == :id %>
-            <label for="delete"><%= "#{key.capitalize}: #{value}" %></label>
-          <% end %>
-          <button name="delete" type="submit">Delete Bill</button>
-        </form>
-      <% end %>
-    <% end %>
-  <% end %>
-</div>
-

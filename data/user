@@ -1,0 +1,236 @@
+\dt
+clear
+\d
+\q
+INSERT INTO lists (name) VALUES ('Chores');
+INSERT INTO lists (name) VALUES ('Homework');
+\q
+\dt
+\d lists
+\q
+\dt
+\d todos
+INSERT INTO todos (name, list_id) VALUES ('Do dishes', 1);
+INSERT INTO todos (name, list_id) VALUES ('Take out trash', 1);
+INSERT INTO todos (name, list_id) VALUES ('Make beds', 1);
+INSERT INTO todos (name, list_id) VALUES ('Change tires', 1);
+INSERT INTO todos (name, list_id) VALUES ('Math', 2);
+INSERT INTO todos (name, list_id) VALUES ('Physics', 2);
+\q
+SELECT * FROM lists;
+\q
+\q
+SELECT * FROM todos WHERE list_id = 1;
+SELECT * FROM lists JOIN todos ON lists.id = todos.list_id;
+SELECT * FROM lists JOIN todos ON lists.id = todos.list_id WHERE list.id = 1;
+SELECT * FROM lists JOIN todos ON lists.id = todos.list_id WHERE lists.id = 1;
+SELECT * FROM todos;
+UPDATE todos SET completed = 't' WHERE id = 1;
+SELECT * FROM todos;
+\dt lists
+\d lists
+\q
+\dt
+\d lists
+\q
+\e
+SELECT * FROM todos;
+SELECT * FROM todos;
+\e
+SELECT COUNT(NULLIF(completed, true)) FROM todos;
+\q
+\l
+CREATE DATABASE bill-tracker;
+CREATE DATABASE bill_tracker;
+\l
+\c bill_tracker
+\q
+\dt
+\d users
+DROP TABLE users 
+;
+\q
+\dt
+DROP TABLE *;
+DROP TABLE budget_categories;
+DROP TABLE monthly_budgets ;
+DROP TABLE users ;
+DROP TABLE vendors ;
+\dt
+\i schema.sql 
+\dt
+DROP DATABASE bill_tracker ;
+\c todos 
+DROP DATABASE bill_tracker ;
+CREATE DATABASE bill_tracker;
+\i schema.sql 
+/dt
+\dt
+DROP TABLE bills budget_categories monthly_budgets monthly_categories vendors users;
+DROP TABLE bills budget_categories monthly_budgets monthly_categories vendors users;
+DROP TABLE bills, budget_categories, monthly_budgets, monthly_categories, vendors, users;
+\dt
+\c bill_tracker 
+\i schema.sql 
+\dt
+SELECT * fROM bills;
+SELECT * FROM bills
+JOIN vendors ON bills.vendor_id = vendors.id;
+SELECT * FROM bills
+JOIN vendors ON bills.vendor_id = vendors.id
+;
+\e
+SELECT * FROM bills
+JOIN vendors ON bills.vendor_id = vendors.id
+JOIN budget_categories ON budget_categories.id = bills.budget_category_id
+;
+\e
+SELECT * FROM bills
+JOIN vendors ON bills.vendor_id = vendors.id
+JOIN budget_categories ON budget_categories.id = bills.budget_category_id
+JOIN monthly_categories ON budget_categories.id = monthly_categories.budget_category_id
+JOIN monthly_budgets ON monthly_categories.monthly_budget_id = monthly_budgets.id
+;
+\e
+SELECT bills.memo, vendors.name, budget_categories.name, monthly_budgets.amount
+FROM bills
+JOIN vendors ON bills.vendor_id = vendors.id
+JOIN budget_categories ON budget_categories.id = bills.budget_category_id
+JOIN monthly_categories ON budget_categories.id = monthly_categories.budget_category_id
+JOIN monthly_budgets ON monthly_categories.monthly_budget_id = monthly_budgets.id
+;
+\e
+SELECT bills.memo, bills.amount, bills.payment_date, vendors.name, budget_categories.name, monthly_categories.category_amount, monthly_budgets.amount, monthly_budgets.date_beginning,
+FROM bills
+JOIN vendors ON bills.vendor_id = vendors.id
+JOIN budget_categories ON budget_categories.id = bills.budget_category_id
+JOIN monthly_categories ON budget_categories.id = monthly_categories.budget_category_id
+JOIN monthly_budgets ON monthly_categories.monthly_budget_id = monthly_budgets.id
+;
+\e
+SELECT bills.memo, bills.amount, bills.payment_date, vendors.name, budget_categories.name, monthly_categories.category_amount, monthly_budgets.amount, monthly_budgets.date_beginning
+FROM bills
+JOIN vendors ON bills.vendor_id = vendors.id
+JOIN budget_categories ON budget_categories.id = bills.budget_category_id
+JOIN monthly_categories ON budget_categories.id = monthly_categories.budget_category_id
+JOIN monthly_budgets ON monthly_categories.monthly_budget_id = monthly_budgets.id
+;
+\e
+SELECT bills.memo, bills.amount, bills.payment_date, vendors.name, budget_categories.name, monthly_categories.category_amount, monthly_budgets.amount, monthly_budgets.date_beginning
+FROM bills
+JOIN vendors ON bills.vendor_id = vendors.id
+JOIN budget_categories ON budget_categories.id = bills.budget_category_id
+JOIN monthly_categories ON budget_categories.id = monthly_categories.budget_category_id
+JOIN monthly_budgets ON monthly_categories.monthly_budget_id = monthly_budgets.id
+WHERE bills.payment_date between monthly_budgets.date_beginning and monthly_budgets.date_beginning + INTERVAL '1 month' - INTERVAL '1 day'
+;
+SELECT bills.memo, bills.amount, bills.payment_date, vendors.name, budget_categories.name, monthly_categories.category_amount, monthly_budgets.amount, monthly_budgets.date_beginning
+FROM bills
+JOIN vendors ON bills.vendor_id = vendors.id
+JOIN budget_categories ON budget_categories.id = bills.budget_category_id
+JOIN monthly_categories ON budget_categories.id = monthly_categories.budget_category_id
+JOIN monthly_budgets ON monthly_categories.monthly_budget_id = monthly_budgets.id
+WHERE bills.payment_date between monthly_budgets.date_beginning and monthly_budgets.date_beginning + INTERVAL '1 month' - INTERVAL '1 day'
+;
+/e
+\e
+/e
+SELECT bills.memo, bills.amount, bills.payment_date, vendors.name, budget_categories.name, monthly_categories.category_amount, monthly_budgets.amount, monthly_budgets.date_beginning
+FROM bills
+JOIN vendors ON bills.vendor_id = vendors.id
+JOIN budget_categories ON budget_categories.id = bills.budget_category_id
+JOIN monthly_categories ON budget_categories.id = monthly_categories.budget_category_id
+JOIN monthly_budgets ON monthly_categories.monthly_budget_id = monthly_budgets.id
+WHERE bills.payment_date between monthly_budgets.date_beginning and monthly_budgets.date_beginning + INTERVAL '1 month' - INTERVAL '1 day'
+;
+SELECT bills.memo, bills.amount, bills.payment_date, vendors.name, budget_categories.name, monthly_categories.category_amount, monthly_budgets.amount, monthly_budgets.date_beginning
+FROM bills
+JOIN vendors ON bills.vendor_id = vendors.id
+JOIN budget_categories ON budget_categories.id = bills.budget_category_id
+JOIN monthly_categories ON budget_categories.id = monthly_categories.budget_category_id
+JOIN monthly_budgets ON monthly_categories.monthly_budget_id = monthly_budgets.id
+WHERE bills.payment_date between monthly_budgets.date_beginning and monthly_budgets.date_beginning + INTERVAL '1 month' - INTERVAL '1 day'
+;
+\e
+SELECT bills.id bills.memo, bills.amount, bills.payment_date, vendors.name, budget_categories.name, monthly_categories.category_amount, monthly_budgets.id  monthly_budgets.amount, monthly_budgets.date_beginning
+FROM bills
+JOIN vendors ON bills.vendor_id = vendors.id
+JOIN budget_categories ON budget_categories.id = bills.budget_category_id
+JOIN monthly_categories ON budget_categories.id = monthly_categories.budget_category_id
+JOIN monthly_budgets ON monthly_categories.monthly_budget_id = monthly_budgets.id
+WHERE bills.payment_date between monthly_budgets.date_beginning and monthly_budgets.date_beginning + INTERVAL '1 month' - INTERVAL '1 day'
+ORDER BY monthly_budgets.date_beginning ASC
+;
+\e
+SELECT bills.id, bills.memo, bills.amount, bills.payment_date, vendors.name, budget_categories.name, monthly_categories.category_amount, monthly_budgets.id, monthly_budgets.amount, monthly_budgets.date_beginning
+FROM bills
+JOIN vendors ON bills.vendor_id = vendors.id
+JOIN budget_categories ON budget_categories.id = bills.budget_category_id
+JOIN monthly_categories ON budget_categories.id = monthly_categories.budget_category_id
+JOIN monthly_budgets ON monthly_categories.monthly_budget_id = monthly_budgets.id
+WHERE bills.payment_date between monthly_budgets.date_beginning and monthly_budgets.date_beginning + INTERVAL '1 month' - INTERVAL '1 day'
+ORDER BY monthly_budgets.date_beginning ASC
+;
+\e
+SELECT bills.id, bills.memo, bills.amount, bills.payment_date, 
+ vendors.name, budget_categories.name, monthly_categories.category_amount, monthly_budgets.id, monthly_budgets.amount, monthly_budgets.date_beginning
+FROM bills
+JOIN vendors ON bills.vendor_id = vendors.id
+JOIN budget_categories ON budget_categories.id = bills.budget_category_id
+JOIN monthly_categories ON budget_categories.id = monthly_categories.budget_category_id
+JOIN monthly_budgets ON monthly_categories.monthly_budget_id = monthly_budgets.id
+WHERE bills.payment_date between monthly_budgets.date_beginning and monthly_budgets.date_beginning + INTERVAL '1 month' - INTERVAL '1 day'
+ORDER BY monthly_budgets.date_beginning ASC
+;
+SELECT COUNT(id) from bills;
+SELECT now();
+SELECT now() + INTERVAL '1 month';
+SELECT now() + INTERVAL '1 month' - INTERVAL '1 day';
+SELECT bills.id, bills.memo, bills.amount, bills.payment_date, 
+ vendors.name, budget_categories.name, monthly_categories.category_amount, monthly_budgets.id, monthly_budgets.amount, monthly_budgets.date_beginning
+FROM bills
+JOIN vendors ON bills.vendor_id = vendors.id
+JOIN budget_categories ON budget_categories.id = bills.budget_category_id
+JOIN monthly_categories ON budget_categories.id = monthly_categories.budget_category_id
+JOIN monthly_budgets ON monthly_categories.monthly_budget_id = monthly_budgets.id
+WHERE bills.payment_date between monthly_budgets.date_beginning and monthly_budgets.date_beginning + INTERVAL '1 month' - INTERVAL '1 day'
+ORDER BY monthly_budgets.date_beginning ASC
+;
+/e
+\e
+/e
+;
+SELECT bills.id, bills.memo, bills.amount, bills.payment_date, 
+ vendors.name, budget_categories.name, monthly_categories.category_amount, monthly_budgets.id, monthly_budgets.amount, monthly_budgets.date_beginning
+FROM bills
+JOIN vendors ON bills.vendor_id = vendors.id
+JOIN budget_categories ON budget_categories.id = bills.budget_category_id
+JOIN monthly_categories ON budget_categories.id = monthly_categories.budget_category_id
+JOIN monthly_budgets ON monthly_categories.monthly_budget_id = monthly_budgets.id
+WHERE bills.payment_date between monthly_budgets.date_beginning and monthly_budgets.date_beginning + INTERVAL '1 month' - INTERVAL '1 day'
+ORDER BY monthly_budgets.date_beginning ASC
+;
+\e
+SELECT bills.id, bills.memo, bills.amount, bills.payment_date,
+ vendors.name,
+budget_categories.name,
+monthly_categories.category_amount,
+monthly_budgets.id, monthly_budgets.amount, monthly_budgets.date_beginning,
+EXTRACT (YEAR FROM monthly_budgets.date_beginning) AS year,
+EXTRACT (MONTH FROM monthly_budgets.date_beginning) AS month
+FROM bills
+JOIN vendors ON bills.vendor_id = vendors.id
+JOIN budget_categories ON budget_categories.id = bills.budget_category_id
+JOIN monthly_categories ON budget_categories.id = monthly_categories.budget_category_id
+JOIN monthly_budgets ON monthly_categories.monthly_budget_id = monthly_budgets.id
+WHERE bills.payment_date between monthly_budgets.date_beginning and monthly_budgets.date_beginning + INTERVAL '1 month' - INTERVAL '1 day'
+ORDER BY monthly_budgets.date_beginning ASC
+;
+\e
+
+\q
+\dt
+\d users
+\d users
+\dt users
+\s user

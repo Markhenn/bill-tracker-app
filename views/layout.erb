@@ -9,13 +9,40 @@
       <p><%= session.delete(:message) %></p>
     <% end %>
 
-    <%= yield %>
-    <% if session[:username] %>
-      <hr>
-      <form method="post" action="/logout">
-        <label>Current User: <%= session[:username] %></label>
-        <button type="submit">Log Out</button>
+    <h2>Your default monthly budget is: <%= @budget %></h2>
+
+    <a href="/change_budget">Change Budget</a>
+
+    <div>
+      <h2>Add a bill:</h2>
+      <form method="post" action="/add_bill">
+        <div>
+          <label for="date">Date:
+            <input name="date" type="date" value="<%= todays_date %>">
+          </label>
+        </div>
+        <div>
+          <label for="amount">Amount:
+            <input name="amount" value="<%= @amount %>">
+          </label>
+        </div>
+        <div>
+          <label for="vendor">Vendor:
+            <input name="vendor" value="<%= @vendor %>">
+          </label>
+        </div>
+        <button type="submit">Add Bill</button>
       </form>
-    <% end %>
-  </body>
-</html>
+    </div>
+
+    <%= yield %>
+
+    <%# <% if session[:username] %1> %>
+    <%#   <hr> %>
+    <%#   <form method="post" action="/logout"> %>
+    <%#     <label>Current User: <%= session[:username] %1></label> %>
+    <%#     <button type="submit">Log Out</button> %>
+    <%#   </form> %>
+    <%# <% end %1> %>
+  <%# </body> %>
+<%# </html> %>

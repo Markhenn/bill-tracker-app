@@ -1,0 +1,29 @@
+<div>
+  <h2>All Bills</h2>
+  <% @full_budget.first.each do |year, months| %>
+  <%# <% sort_hash_on_key(@full_budget) do |year, months| %1> %>
+    <h2><%= year %></h2>
+    <%# <% sort_hash_on_key(months) do |month, values| %1> %>
+    <% months.each do |month, month_values| %>
+      <h3><%= full_month_name(month, year) %></h3>
+      <p><%= show_monthly_summary(month_values) %></p>
+      <% sort_categories(month_values[:categories]) do |category, cat_values| %>
+        <h3>
+          Category <%= category %>:
+          <%= cat_values[:category_name] %> with a
+          budget of: <%= cat_values[:category_amount] %>
+        </h3>
+        <% sort_bills(cat_values[:bills]) do |bill| %>
+          <%= "Item: #{bill[:memo]}, Price: #{bill[:bill_amount]}, Payment Date: #{bill[:payment_date]}, Vendor: #{bill[:vendor]}" %>
+          <form style="display:inline;" method="put" action="/bills/<%= bill[:bill_id] %>">
+            <button name="edit" type="submit">Edit Bill</button>
+          </form>
+          <form style="display:inline;" method="delete" action="/bills/<%= bill[:bill_id] %>">
+            <button name="delete" type="submit">Delete Bill</button>
+          </form>
+          </br>
+        <% end %>
+      <% end %>
+    <% end %>
+  <% end %>
+</div>
