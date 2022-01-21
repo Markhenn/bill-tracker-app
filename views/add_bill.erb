@@ -1,0 +1,22 @@
+    <div>
+      <h2>Add a bill:</h2>
+      <form method="post" action="/bills/add">
+        <div>
+          <label for="date">Date:
+            <input name="date" type="date" value="<%= todays_date %>">
+          </label>
+        </div>
+        <div>
+          <label for="amount">Amount:
+            <input name="amount" value="<%= @amount %>">
+          </label>
+        </div>
+        <div>
+          <label for="vendor">Vendor:
+            <input name="vendor" value="<%= @vendor %>">
+          </label>
+        </div>
+        <button type="submit">Add Bill</button>
+      </form>
+    </div>
+

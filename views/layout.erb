@@ -11,29 +11,8 @@
 
     <h2>Your default monthly budget is: <%= @budget %></h2>
 
-    <a href="/change_budget">Change Budget</a>
-
-    <div>
-      <h2>Add a bill:</h2>
-      <form method="post" action="/add_bill">
-        <div>
-          <label for="date">Date:
-            <input name="date" type="date" value="<%= todays_date %>">
-          </label>
-        </div>
-        <div>
-          <label for="amount">Amount:
-            <input name="amount" value="<%= @amount %>">
-          </label>
-        </div>
-        <div>
-          <label for="vendor">Vendor:
-            <input name="vendor" value="<%= @vendor %>">
-          </label>
-        </div>
-        <button type="submit">Add Bill</button>
-      </form>
-    </div>
+    <a href="/users/change_default_budget">Change Budget</a>
+    <a href="/bills/add">Add a Bill</a>
 
     <%= yield %>
 

@@ -3,19 +3,24 @@
   <% @full_budget.first.each do |year, months| %>
   <%# <% sort_hash_on_key(@full_budget) do |year, months| %1> %>
     <h2><%= year %></h2>
+    <p><%= show_yearly_summary(months) %></p>
     <%# <% sort_hash_on_key(months) do |month, values| %1> %>
     <% months.each do |month, month_values| %>
-      <h3><%= full_month_name(month, year) %></h3>
-      <p><%= show_monthly_summary(month_values) %></p>
+      <h3>
+        <%= full_month_name(month, year) %>
+        <form style="display:inline;" method="get" action="/budgets/<%= month_values[:budget_id] %>">
+          <button name="edit" type="submit">
+            Edit Budget <%= full_month_name(month, year) %>
+          </button>
+        </form>
+      </h3>
+      <p><%= show_budget_balance(month_values) %></p>
       <% sort_categories(month_values[:categories]) do |category, cat_values| %>
-        <h3>
-          Category <%= category %>:
-          <%= cat_values[:category_name] %> with a
-          budget of: <%= cat_values[:category_amount] %>
-        </h3>
+        <h3>Category: <%= cat_values[:category_name] %></h3>
+        <p><%= show_budget_balance(cat_values) %></p>
         <% sort_bills(cat_values[:bills]) do |bill| %>
           <%= "Item: #{bill[:memo]}, Price: #{bill[:bill_amount]}, Payment Date: #{bill[:payment_date]}, Vendor: #{bill[:vendor]}" %>
-          <form style="display:inline;" method="put" action="/bills/<%= bill[:bill_id] %>">
+          <form style="display:inline;" method="get" action="/bills/<%= bill[:bill_id] %>">
             <button name="edit" type="submit">Edit Bill</button>
           </form>
           <form style="display:inline;" method="delete" action="/bills/<%= bill[:bill_id] %>">

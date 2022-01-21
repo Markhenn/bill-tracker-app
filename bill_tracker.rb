@@ -1,12 +1,10 @@
 # frozen_string_literal: true
 
 require 'sinatra'
-# require 'sinatra/reloader' if development?
 require 'yaml'
 # require 'bcrypt'
-require 'pp'
 
-require 'pg'
+require_relative 'database_persistance'
 
 configure do
   enable :sessions
@@ -17,6 +15,7 @@ end
 configure :development do
   require 'sinatra/reloader'
   also_reload 'bill_tracker.rb'
+  also_reload 'database_persistance.rb'
 end
 
 def config_path
@@ -65,101 +64,36 @@ helpers do
     bills_sorted.each(&block)
   end
 
-  def show_monthly_summary(value_hash)
-    m_budget = "The monthly budget is: #{value_hash[:budget_amount]}"
+  def show_budget_balance(value_hash)
+    budget = "The budget is: #{value_hash[:budget_amount]}"
 
-    # sum = "Sum of bills: #{sum_of_bills(value_hash[:bills])}"
+    sum = "Sum of bills for the budget: #{value_hash[:bills_sum]}"
 
-    # [m_budget, sum, determine_difference_message(value_hash)].join('</br>')
+    [budget, sum, determine_difference_message(value_hash)].join('</br>')
+  end
+
+  def show_yearly_summary(values)
+    bills = values.delete(:bills_sum)
+    budget = values.map {|m| m[1][:budget_amount]}.reduce(:+)
+    year_values = {budget_amount: budget, bills_sum: bills}
+    pp year_values
+    show_budget_balance(year_values)
   end
 end
 
-class DatabasePersistance
+# def user_path(username)
+#   user_file = "#{username}.yaml"
+#   File.join(data_path, user_file)
+# end
 
-  def initialize
-    @db = PG.connect(dbname: 'bill_tracker')
-  end
+# def load_user(username)
+#   # The [Symbol] makes sure that symbols are loaded, which would be disallowed
+#   YAML.safe_load(File.read(user_path(username)), [Symbol])
+# end
 
-  def user_data(userid)
-    sql = 'SELECT id, username, default_monthly_budget FROM users WHERE id = $1'
-    result = @db.exec_params(sql, [userid])
-    result.values.first
-  end
-
-  def full_budget
-    sql = <<~SQL
-    SELECT bills.id AS bill_id, bills.memo, bills.amount AS bill_amount, bills.payment_date,
-    vendors.name AS vendor,
-    budget_categories.name AS category_name, budget_categories.id AS category_id,
-    monthly_categories.category_amount AS category_amount,
-    monthly_budgets.id AS budget_id, monthly_budgets.amount AS budget_amount, monthly_budgets.date_beginning,
-    EXTRACT (YEAR FROM monthly_budgets.date_beginning) AS year,
-    EXTRACT (MONTH FROM monthly_budgets.date_beginning) AS month
-    FROM bills
-    JOIN vendors ON bills.vendor_id = vendors.id
-    JOIN budget_categories ON budget_categories.id = bills.budget_category_id
-    JOIN monthly_categories ON budget_categories.id = monthly_categories.budget_category_id
-    JOIN monthly_budgets ON monthly_categories.monthly_budget_id = monthly_budgets.id
-    WHERE bills.payment_date between monthly_budgets.date_beginning and
-    monthly_budgets.date_beginning + INTERVAL '1 month' - INTERVAL '1 day'
-    ORDER BY monthly_budgets.date_beginning ASC;
-    SQL
-
-    result = @db.exec(sql)
-
-    full_budget = Hash.new { |h,k| h[k] = Hash.new(&h.default_proc) }
-
-    result.each do |tuple|
-      year = tuple['year']
-      month = tuple['month']
-      cat_id = tuple['category_id'].to_i
-      categories = full_budget[year][month][:categories]
-
-      bill = {
-            bill_id: tuple['bill_id'].to_i,
-            memo: tuple['memo'],
-            bill_amount: tuple['bill_amount'].to_f,
-            payment_date: tuple['payment_date'],
-            vendor: tuple['vendor']
-      }
-
-      if categories[cat_id][:bills].empty?
-        categories[cat_id][:bills] = [bill]
-      else
-        categories[cat_id][:bills] << bill
-      end
-
-      unless full_budget[year][month].key?(tuple['budget_id'].to_i)
-        full_budget[year][month][:budget_id] = tuple['budget_id'].to_i
-        full_budget[year][month][:budget_amount] = tuple['budget_amount'].to_f
-      end
-
-      unless categories[cat_id].key?(tuple['category_name'])
-        categories[cat_id][:category_name] = tuple['category_name']
-        categories[cat_id][:category_amount] = tuple['category_amount'].to_f
-      end
-    end
-
-    pp full_budget
-    [full_budget]
-  end
-
-
-end
-
-def user_path(username)
-  user_file = "#{username}.yaml"
-  File.join(data_path, user_file)
-end
-
-def load_user(username)
-  # The [Symbol] makes sure that symbols are loaded, which would be disallowed
-  YAML.safe_load(File.read(user_path(username)), [Symbol])
-end
-
-def write_user_yaml(username)
-  File.write(user_path(username), @user_data.to_yaml)
-end
+# def write_user_yaml(username)
+#   File.write(user_path(username), @user_data.to_yaml)
+# end
 
 # def logged_in?
 #   if session[:username]
@@ -175,15 +109,15 @@ end
 #   write_users_file(users)
 # end
 
-def load_users_file
-  file_path = File.join(config_path, 'users.yaml')
-  YAML.safe_load(File.read(file_path), [Symbol, BCrypt::Password])
-end
+# def load_users_file
+#   file_path = File.join(config_path, 'users.yaml')
+#   YAML.safe_load(File.read(file_path), [Symbol, BCrypt::Password])
+# end
 
-def write_users_file(users)
-  file_path = File.join(config_path, 'users.yaml')
-  File.write(file_path, users.to_yaml)
-end
+# def write_users_file(users)
+#   file_path = File.join(config_path, 'users.yaml')
+#   File.write(file_path, users.to_yaml)
+# end
 
 # def user_valid?(username, password)
 #   user_file = load_users_file
@@ -249,8 +183,7 @@ def sum_of_bills(bills)
 end
 
 def determine_difference_message(values)
-  sum = sum_of_bills(values[:bills])
-  difference = (values[:budget_amount].to_f - sum).round(2)
+  difference = (values[:budget_amount] - values[:bills_sum]).round(2)
 
   if difference.positive?
     "You still have #{difference} left to spend"
@@ -275,7 +208,7 @@ end
 
 before do
   # @user_data = load_user('admin')
-  @storage = DatabasePersistance.new
+  @storage = DatabasePersistance.new(logger)
   userid = '1'
   @user_data = @storage.user_data(userid)
   @budget = @user_data[2]
@@ -299,12 +232,12 @@ get '/full_budget' do
   erb :full_budget
 end
 
-get '/change_budget' do
+get '/users/change_default_budget' do
   # logged_in?
-  erb :change_budget
+  erb :change_default_budget
 end
 
-post '/change_budget' do
+post '/users/change_default_budget' do
   # logged_in?
   new_budget = params[:new_budget]
 
@@ -321,7 +254,17 @@ post '/change_budget' do
   end
 end
 
-post '/add_bill' do
+get '/budgets/:monthly_budget_id' do
+end
+
+put '/budgets/:monthly_budget_id' do
+end
+
+get '/bills/add' do
+  erb :add_bill
+end
+
+post '/bills/add' do
   # logged_in?
 
   error = nil
@@ -351,6 +294,10 @@ post '/add_bill' do
     session[:message] = 'The bill has been added'
     redirect '/'
   end
+end
+
+get '/bills/:bill_id' do
+
 end
 
 put '/bills/:bill_id' do
