@@ -1,0 +1,25 @@
+<div>
+  <h2>Category Budgets</h2>
+  <form style="display:inline;" method"get" action="/users/change_default_budget">
+    <button type="submit">Edit Default Budgets</button>
+  </form>
+  <form style="display:inline;" method"get" action="/budgets/edit">
+    <button type="submit">Edit Monthly Budgets</button>
+  </form>
+  <table>
+    <tr>
+      <th>Category Name</th>
+      <th>Average Monthly Budget</th>
+      <th>Average Monthly Bills Sum</th>
+      <th>Difference of Averages</th>
+    </tr>
+    <% @budget.first.each do |category| %>
+      <tr>
+        <td><%= category[1] %></td>
+        <td><%= category[2] %></td>
+        <td><%= category[3] %></td>
+        <td><%= category[2].to_f - category[3].to_f %></td>
+      </tr>
+    <% end %>
+  </table>
+</div>

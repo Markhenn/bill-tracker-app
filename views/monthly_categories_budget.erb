@@ -1,5 +1,5 @@
 <div>
-  <h2>Full Budget</h2>
+  <h2>Monthly and Category Budgets</h2>
   <% @budget.first.each do |year, months| %>
   <%# <% sort_hash_on_key(@full_budget) do |year, months| %1> %>
     <h2><%= year %></h2>
@@ -18,16 +18,6 @@
       <% sort_categories(month_values[:categories]) do |category, cat_values| %>
         <h3>Category: <%= cat_values[:category_name] %></h3>
         <p><%= show_budget_balance(cat_values) %></p>
-        <% sort_bills(cat_values[:bills]) do |bill| %>
-          <%= "Item: #{bill[:memo]}, Price: #{bill[:bill_amount]}, Payment Date: #{bill[:payment_date]}, Vendor: #{bill[:vendor]}" %>
-          <form style="display:inline;" method="get" action="/bills/<%= bill[:bill_id] %>">
-            <button name="edit" type="submit">Edit Bill</button>
-          </form>
-          <form style="display:inline;" method="delete" action="/bills/<%= bill[:bill_id] %>">
-            <button name="delete" type="submit">Delete Bill</button>
-          </form>
-          </br>
-        <% end %>
       <% end %>
     <% end %>
   <% end %>

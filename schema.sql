@@ -33,13 +33,13 @@ CREATE TABLE bills (
 	memo text NOT NULL,
 	amount decimal(9,2),
 	payment_date date NOT NULL,
-	budget_category_id int NOT NULL REFERENCES budget_categories(id) ON DELETE CASCADE,
-	vendor_id int NOT NULL REFERENCES vendors(id) ON DELETE CASCADE
+	monthly_categories_id int NOT NULL REFERENCES monthly_categories(id),
+	vendor_id int NOT NULL REFERENCES vendors(id)
 );
 
 INSERT INTO users (username) VALUES ('admin');
 
-INSERT INTO budget_categories (name)
-VALUES
-('General'),
-('Savings');
+/* INSERT INTO budget_categories (name) */
+/* VALUES */
+/* ('General'), */
+/* ('Savings'); */

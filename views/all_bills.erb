@@ -1,0 +1,30 @@
+<div>
+  <h2>All Bills</h2>
+  <form style="display:inline;" method"get" action="/vendors/edit">
+    <button type="submit">Edit Vendors</button>
+  </form>
+  <table>
+    <tr>
+      <th>Bill Memo</th>
+      <th>Payment Date</th>
+      <th>Bill Amount</th>
+      <th>Vendor Name</th>
+    </tr>
+    <% @bills.first.each do |bill| %>
+      <tr>
+        <td><%= bill[1] %></td>
+        <td><%= bill[2] %></td>
+        <td><%= bill[3] %></td>
+        <td><%= bill[5] %></td>
+        <td>
+          <form style="display:inline;" method="get" action="/bills/<%= bill[0] %>">
+            <button name="edit" type="submit">Edit Bill</button>
+          </form>
+          <form style="display:inline;" method="delete" action="/bills/<%= bill[0] %>">
+            <button name="delete" type="submit">Delete Bill</button>
+          </form>
+        </td>
+      </tr>
+    <% end %>
+  </table>
+</div>

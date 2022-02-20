@@ -3,25 +3,52 @@
   <title>Bill Tracker</title>
   <%# <link rel="stylesheet" href="/stylesheets/cms.css"> %>
 
+  <style>
+table {
+  font-family: arial, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+
+}
+
+td, th {
+  border: 1px solid #dddddd;
+  text-align: left;
+  padding: 8px;
+
+}
+
+tr:nth-child(even) {
+  background-color: #dddddd;
+
+}
+  </style>
+
   <body>
     <h1>Bill Tracker App</h1>
     <% if session[:message] %>
       <p><%= session.delete(:message) %></p>
     <% end %>
 
-    <h2>Your default monthly budget is: <%= @budget %></h2>
+    <h2>Your default monthly budget is: <%= @default_budget %></h2>
 
-    <a href="/users/change_default_budget">Change Budget</a>
+    <a href="/">Home</a>
+    <a href="/bills">All Bills</a>
+    <a href="/budgets/monthly">Monthly Budget</a>
+    <a href="/budgets/full">Full Budget</a>
+    <a href="/budgets/categories">Category Budget</a>
+    <a href="/users/change_default_budget">Change Default Budgets</a>
+    <a href="/budgets/edit">Change Monthly Budgets</a>
     <a href="/bills/add">Add a Bill</a>
 
     <%= yield %>
 
     <%# <% if session[:username] %1> %>
-    <%#   <hr> %>
-    <%#   <form method="post" action="/logout"> %>
-    <%#     <label>Current User: <%= session[:username] %1></label> %>
-    <%#     <button type="submit">Log Out</button> %>
-    <%#   </form> %>
-    <%# <% end %1> %>
-  <%# </body> %>
-<%# </html> %>
+      <%#   <hr> %>
+      <%#   <form method="post" action="/logout"> %>
+        <%#     <label>Current User: <%= session[:username] %1></label> %>
+        <%#     <button type="submit">Log Out</button> %>
+        <%#   </form> %>
+      <%# <% end %1> %>
+    <%# </body> %>
+  <%# </html> %>

@@ -132,17 +132,17 @@ end
 #   write_user_yaml(username)
 # end
 
-def all_bills
-  bills = []
-  @user_data[:spending].each do |_, months|
-    months.each do |_, content|
-      content.each do |key, values|
-        bills += values if key == :bills
-      end
-    end
-  end
-  bills
-end
+# def all_bills
+#   bills = []
+#   @user_data[:spending].each do |_, months|
+#     months.each do |_, content|
+#       content.each do |key, values|
+#         bills += values if key == :bills
+#       end
+#     end
+#   end
+#   bills
+# end
 
 def valid_amount?(amount)
   amount =~ /\A[+-]?\d+(\.\d{1,2})?\z/
@@ -211,7 +211,7 @@ before do
   @storage = DatabasePersistance.new(logger)
   userid = '1'
   @user_data = @storage.user_data(userid)
-  @budget = @user_data[2]
+  @default_budget = @user_data[2]
 end
 
 get '/' do
@@ -219,16 +219,36 @@ get '/' do
   # @budget = @user_data[:default_budget]
   # @spending = @user_data[:spending]
 
-  redirect '/full_budget'
+  redirect '/budgets/monthly_categories'
   # erb :index
 end
 
-get '/full_budget' do
+get '/bills' do
+  @bills = @storage.all_bills
+  erb :all_bills
+end
+
+get '/budgets/monthly' do
+  @budget = @storage.monthly_budgets
+  erb :monthly_budgets
+end
+
+get '/budgets/categories' do
+  @budget = @storage.category_budgets
+  erb :category_budgets
+end
+
+get '/budgets/monthly_categories' do
+  @budget = @storage.monthly_categories
+  erb :monthly_categories_budget
+end
+
+get '/budgets/full' do
   # logged_in?
   # @budget = @user_data[:default_budget]
   # @spending = @user_data[:spending]
 
-  @full_budget = @storage.full_budget
+  @budget = @storage.full_budget
   erb :full_budget
 end
 
@@ -254,7 +274,12 @@ post '/users/change_default_budget' do
   end
 end
 
-get '/budgets/:monthly_budget_id' do
+get '/budgets/edit' do
+  erb :edit_budgets
+end
+
+get '/budgets/edit/:monthly_budget_id' do
+  erb :edit_monthly_budget
 end
 
 put '/budgets/:monthly_budget_id' do
@@ -307,7 +332,7 @@ end
 delete '/bills/:bill_id' do
   # logged_in?
   id = params[:id]
-  bills = all_bills
+  # bills = all_bills
 
   bill_index = bills.index { |bill| bill[:id] == id }
 
@@ -320,6 +345,10 @@ delete '/bills/:bill_id' do
     session[:message] = 'The bill has been deleted'
     redirect '/'
   end
+end
+
+get '/vendors/edit' do
+
 end
 
 # get '/login' do
