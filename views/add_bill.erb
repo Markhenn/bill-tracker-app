@@ -1,22 +1,38 @@
+<div>
+  <h2>Add a bill:</h2>
+  <form method="post" action="/bills/add">
     <div>
-      <h2>Add a bill:</h2>
-      <form method="post" action="/bills/add">
-        <div>
-          <label for="date">Date:
-            <input name="date" type="date" value="<%= todays_date %>">
-          </label>
-        </div>
-        <div>
-          <label for="amount">Amount:
-            <input name="amount" value="<%= @amount %>">
-          </label>
-        </div>
-        <div>
-          <label for="vendor">Vendor:
-            <input name="vendor" value="<%= @vendor %>">
-          </label>
-        </div>
-        <button type="submit">Add Bill</button>
-      </form>
+      <label for="date">Date:</label>
+      <input name="date" type="date" value="<%= todays_date %>">
     </div>
+    <div>
+      <label for="memo">Memo:</label>
+      <input name="memo" id="memo" value=<%= @memo %>>
+    </div>
+    <div>
+      <label for="category">Category:</label>
+      <input list="categories" name="category" id="category" value=<%= @category %>>
+    </div>
+    <div>
+      <label for="amount">Amount:</label>
+      <input name="amount" value="<%= @amount %>">
+    </div>
+    <div>
+      <label for="vendor">Vendor:</label>
+      <input name="vendor" id="vendor" list="vendors" value="<%= @vendor %>">
+    </div>
+    <button type="submit">Add Bill</button>
+  </form>
+</div>
 
+<datalist id="categories">
+  <% @categories.each do |category| %>
+    <option value="<%= category[1] %>">
+  <% end %>
+</datalist>
+
+<datalist id="vendors">
+  <% @vendors.each do |vendor| %>
+    <option value="<%= vendor[1] %>">
+  <% end %>
+</datalist>

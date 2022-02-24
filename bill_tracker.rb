@@ -148,8 +148,8 @@ def valid_amount?(amount)
   amount =~ /\A[+-]?\d+(\.\d{1,2})?\z/
 end
 
-def valid_vendor?(vendor)
-  vendor =~ /\w{2,}/
+def valid_string?(text)
+  text =~ /\w{2,}/
 end
 
 def invalid_budget?(budget)
@@ -178,9 +178,9 @@ def parse_date(date_string)
   Date.strptime(date_string, '%Y-%m-%d')
 end
 
-def sum_of_bills(bills)
-  bills.reduce(0) { |sum, bill| sum + bill[:bill_amount] }.round(2)
-end
+# def sum_of_bills(bills)
+#   bills.reduce(0) { |sum, bill| sum + bill[:bill_amount] }.round(2)
+# end
 
 def determine_difference_message(values)
   difference = (values[:budget_amount] - values[:bills_sum]).round(2)
@@ -192,18 +192,6 @@ def determine_difference_message(values)
   else
     'Your budget has been completely consumed'
   end
-end
-
-def get_date_data(html_date)
-  date = parse_date(html_date)
-  spending = @user_data[:spending]
-  spending[date.year] = {} if spending[date.year].nil?
-
-  year = spending[date.year]
-
-  default_budget = @user_data[:default_budget]
-  year[date.month] = { monthly_budget: default_budget, bills: [] } if year[date.month].nil?
-  date
 end
 
 before do
@@ -286,38 +274,49 @@ put '/budgets/:monthly_budget_id' do
 end
 
 get '/bills/add' do
+  @vendors = @storage.all_vendors
+  @categories = @storage.all_categories
+
   erb :add_bill
 end
 
 post '/bills/add' do
-  # logged_in?
-
   error = nil
+  error = 'The memo needs to have at least two chars' unless valid_string?(params[:memo])
+  error = 'The category needs to have at least two chars' unless valid_string?(params[:category])
   error = 'The amount needs to be a decimal number (ie. 12.34)' unless valid_amount?(params[:amount])
-  error = 'The vendor needs to have at least two chars' unless valid_vendor?(params[:vendor])
+  error = 'The vendor needs to have at least two chars' unless valid_string?(params[:vendor])
 
   if error
-    @spending = @user_data[:spending]
+    @vendors = @storage.all_vendors
+    @categories = @storage.all_categories
     @date = params[:date]
+    @category = params[:category]
     @vendor = params[:vendor]
     @amount = params[:amount]
+    @memo = params[:memo]
     session[:message] = error
     status 422
-    erb :index
+    erb :add_bill
   else
-    date = get_date_data(params[:date])
+    @vendors = @storage.all_vendors
+    @categories = @storage.all_categories
+    @date = params[:date]
+    @category = params[:category]
+    @vendor = params[:vendor]
+    @amount = params[:amount]
+    @memo = params[:memo]
 
-    @user_data[:spending][date.year][date.month][:bills] << {
-      id: DateTime.now.strftime('%Y%m%d%H%M%S'),
-      date: params[:date],
-      vendor: params[:vendor],
-      amount: params[:amount]
-    }
+    values = [params[:memo],
+              params[:amount],
+              params[:date],
+              params[:category],
+              params[:vendor]]
 
-    write_user_yaml(session[:username])
+    @storage.add_bill(values)
 
     session[:message] = 'The bill has been added'
-    redirect '/'
+    erb :add_bill
   end
 end
 

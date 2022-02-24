@@ -18,6 +18,34 @@ class DatabasePersistance
 
   end
 
+  def add_bill(values)
+    vendor_id = get_vendor_id(values[4])
+    monthly_categories_id = get_monthly_category_id(values[3], values[2])
+
+    values = values[0..2] + [monthly_categories_id] + [vendor_id]
+
+    sql = <<~SQL
+    INSERT INTO bills
+    (memo, amount, payment_date, monthly_categories_id, vendor_id)
+    VALUES
+    ($1, $2, $3, $4, $5)
+    SQL
+
+    query(sql, *values)
+  end
+
+  def all_categories
+    sql = 'SELECT id, name FROM budget_categories'
+    result = query(sql)
+    result.values
+  end
+
+  def all_vendors
+    sql = 'SELECT * FROM vendors'
+    result = query(sql)
+    result.values
+  end
+
   def all_bills
     sql = <<~SQL
     SELECT
@@ -141,7 +169,6 @@ class DatabasePersistance
   end
 
   def full_budget
-
     result = query(full_budget_sql)
 
     budget = Hash.new { |h,k| h[k] = Hash.new(&h.default_proc) }
@@ -212,8 +239,107 @@ class DatabasePersistance
     JOIN monthly_categories ON monthly_categories.id = bills.monthly_categories_id
     JOIN budget_categories ON budget_categories.id = monthly_categories.budget_category_id
     JOIN monthly_budgets ON monthly_categories.monthly_budget_id = monthly_budgets.id
-    ORDER BY monthly_budgets.date_beginning ASC;
+    ORDER BY monthly_budgets.date_beginning DESC;
     SQL
+  end
+
+  def vendor_id(name)
+    sql = "SELECT id FROM vendors WHERE name = $1"
+    result = query(sql, name)
+
+    return nil if result.ntuples.zero?
+    result.values.first.first.to_i
+  end
+
+  def get_vendor_id(name)
+    loop do
+      id = vendor_id(name)
+      break id if id
+      add_vendor_to_db(name)
+    end
+  end
+
+  def budget_id(date_beginning)
+    sql = "SELECT id FROM monthly_budgets WHERE date_beginning = $1"
+    result = query(sql, date_beginning)
+
+    return nil if result.ntuples.zero?
+    result.values.first.first.to_i
+  end
+
+  def category_id(name)
+    sql = "SELECT id FROM budget_categories WHERE name = $1"
+    result = query(sql, name)
+
+    return nil if result.ntuples.zero?
+    result.values.first.first.to_i
+  end
+
+  def monthly_category_id(category_id, budget_id)
+    sql = "SELECT id FROM monthly_categories WHERE budget_category_id = $1 AND monthly_budget_id = $2"
+    result = query(sql, category_id, budget_id)
+
+    return nil if result.ntuples.zero?
+    result.values.first.first.to_i
+  end
+
+  def get_budget_id(date)
+    date_beginning = date.split('-')
+    date_beginning[2] = '01'
+    date_beginning = date_beginning.join('-')
+
+    loop do
+      id = budget_id(date_beginning)
+      break id if id
+      add_budget_to_db(date_beginning)
+    end
+  end
+
+  def get_category_id(category_name)
+    loop do
+      id = category_id(category_name)
+      break id if id
+      add_category_to_db(category_name)
+    end
+  end
+
+  def get_monthly_category_id(category_name, date)
+    c_id = get_category_id(category_name)
+    b_id = get_budget_id(date)
+
+    loop do
+      id = monthly_category_id(c_id, b_id)
+      break id if id
+      add_monthly_category_to_db(c_id, b_id)
+    end
+  end
+
+  def add_budget_to_db(date_beginning)
+    # User ID is hardcoded and has to be changed later in impementation
+    user_id = 1
+    sql = "SELECT default_monthly_budget FROM users WHERE id = $1"
+    default_amount = query(sql, user_id).values.first.first.to_f
+
+    sql = "INSERT INTO monthly_budgets(date_beginning, amount) VALUES ($1, $2)"
+    query(sql, date_beginning, default_amount)
+  end
+
+  def add_category_to_db(name)
+    sql = "INSERT INTO budget_categories(name, default_amount) VALUES ($1, 0)"
+    query(sql, name)
+  end
+
+  def add_monthly_category_to_db(category_id, budget_id)
+    sql = "SELECT default_amount FROM budget_categories WHERE id = $1"
+    amount = query(sql, category_id).values.first.first
+
+    sql = "INSERT INTO monthly_categories(budget_category_id, monthly_budget_id, category_amount) VALUES ($1, $2, $3)"
+    query(sql, category_id, budget_id, amount)
+  end
+
+  def add_vendor_to_db(name)
+    sql = "INSERT INTO vendors(name) VALUES ($1)"
+    query(sql, name)
   end
 end
 
