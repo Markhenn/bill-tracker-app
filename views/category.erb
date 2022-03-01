@@ -1,0 +1,14 @@
+<div>
+  <h2>Edit a Category:</h2>
+  <form method="post" action="/categories/<%= @id %>/edit">
+    <div>
+      <label for="name">Category Name:</label>
+      <input name="name" id="name" value="<%= @name %>">
+    </div>
+    <div>
+      <label for="default_amount">Default Budget</label>
+      <input name="default_amount" id="default_amount" value="<%= @default_amount %>">
+    </div>
+    <button type="submit">Edit Category</button>
+  </form>
+</div>

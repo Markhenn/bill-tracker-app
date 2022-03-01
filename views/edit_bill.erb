@@ -1,17 +1,17 @@
 <div>
-  <h2>Add a bill:</h2>
-  <form method="post" action="/bills">
+  <h2>Edit a bill:</h2>
+  <form method="post" action="/bills/<%= @id %>/edit">
     <div>
       <label for="date">Date:</label>
-      <input name="date" type="date" value="<%= todays_date %>">
+      <input name="date" type="date" value="<%= @date %>">
     </div>
     <div>
       <label for="memo">Memo:</label>
-      <input name="memo" id="memo" value=<%= @memo %>>
+      <input name="memo" id="memo" value="<%= @memo %>">
     </div>
     <div>
       <label for="category">Category:</label>
-      <input list="categories" name="category" id="category" value=<%= @category %>>
+      <input list="categories" name="category" id="category" value="<%= @category %>">
     </div>
     <div>
       <label for="amount">Amount:</label>
@@ -21,7 +21,7 @@
       <label for="vendor">Vendor:</label>
       <input name="vendor" id="vendor" list="vendors" value="<%= @vendor %>">
     </div>
-    <button type="submit">Add Bill</button>
+    <button type="submit">Edit Bill</button>
   </form>
 </div>
 

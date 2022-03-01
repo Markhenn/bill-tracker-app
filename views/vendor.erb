@@ -1,0 +1,10 @@
+<div>
+  <h2>Edit a vendor:</h2>
+  <form method="post" action="/vendors/<%= @id %>/edit">
+    <div>
+      <label for="name">Vendor Name:</label>
+      <input name="name" id="name" value="<%= @name %>">
+    </div>
+    <button type="submit">Edit Vendor</button>
+  </form>
+</div>

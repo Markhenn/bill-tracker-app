@@ -23,7 +23,7 @@
           <form style="display:inline;" method="get" action="/bills/<%= bill[:bill_id] %>">
             <button name="edit" type="submit">Edit Bill</button>
           </form>
-          <form style="display:inline;" method="delete" action="/bills/<%= bill[:bill_id] %>">
+          <form style="display:inline;" method="post" action="/bills/<%= bill[:bill_id] %>/delete">
             <button name="delete" type="submit">Delete Bill</button>
           </form>
           </br>

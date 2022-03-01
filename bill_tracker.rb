@@ -216,14 +216,55 @@ get '/bills' do
   erb :all_bills
 end
 
+get '/categories' do
+  @category = @storage.categories
+  p @category
+  erb :categories
+end
+
+get '/categories/:id' do
+  @id = params[:id]
+  p params
+
+  error = nil
+  error = 'This category does not exist' unless @storage.category(@id)
+
+  unless @id
+    session[:message] = error
+    redirect 'budgets/categories', 422
+  else
+    @name, @default_amount = @storage.category(@id)
+    erb :category
+  end
+end
+
+post '/categories/:id/edit' do
+  id = params[:id].to_i
+  name = params[:name]
+
+  error = nil
+  error = 'The category needs to have at least two chars' unless valid_string?(params[:name])
+  error = 'The category name exists already' if @storage.category(id).first != name && @storage.category_id(name)
+  error = 'The default budget needs to be a decimal number (ie. 12.34)' unless valid_amount?(params[:default_amount])
+
+  if error
+    session[:message] = error
+    redirect "/categories/#{id}", 422
+  else
+    values = [id,
+              name,
+              params[:default_amount].to_f
+    ]
+
+    @storage.update_category(values)
+    session[:message] = 'The Category has been updated'
+    redirect '/categories'
+  end
+end
+
 get '/budgets/monthly' do
   @budget = @storage.monthly_budgets
   erb :monthly_budgets
-end
-
-get '/budgets/categories' do
-  @budget = @storage.category_budgets
-  erb :category_budgets
 end
 
 get '/budgets/monthly_categories' do
@@ -270,7 +311,7 @@ get '/budgets/edit/:monthly_budget_id' do
   erb :edit_monthly_budget
 end
 
-put '/budgets/:monthly_budget_id' do
+post '/budgets/:monthly_budget_id/edit' do
 end
 
 get '/bills/add' do
@@ -280,33 +321,25 @@ get '/bills/add' do
   erb :add_bill
 end
 
-post '/bills/add' do
+post '/bills' do
   error = nil
   error = 'The memo needs to have at least two chars' unless valid_string?(params[:memo])
   error = 'The category needs to have at least two chars' unless valid_string?(params[:category])
   error = 'The amount needs to be a decimal number (ie. 12.34)' unless valid_amount?(params[:amount])
   error = 'The vendor needs to have at least two chars' unless valid_string?(params[:vendor])
 
+  @vendors = @storage.all_vendors
+  @categories = @storage.all_categories
+  @date = params[:date]
+  @category = params[:category]
+  @vendor = params[:vendor]
+  @amount = params[:amount]
+  @memo = params[:memo]
+
   if error
-    @vendors = @storage.all_vendors
-    @categories = @storage.all_categories
-    @date = params[:date]
-    @category = params[:category]
-    @vendor = params[:vendor]
-    @amount = params[:amount]
-    @memo = params[:memo]
     session[:message] = error
     status 422
-    erb :add_bill
   else
-    @vendors = @storage.all_vendors
-    @categories = @storage.all_categories
-    @date = params[:date]
-    @category = params[:category]
-    @vendor = params[:vendor]
-    @amount = params[:amount]
-    @memo = params[:memo]
-
     values = [params[:memo],
               params[:amount],
               params[:date],
@@ -314,40 +347,95 @@ post '/bills/add' do
               params[:vendor]]
 
     @storage.add_bill(values)
-
     session[:message] = 'The bill has been added'
-    erb :add_bill
   end
+
+    erb :add_bill
 end
 
 get '/bills/:bill_id' do
+  @vendors = @storage.all_vendors
+  @categories = @storage.all_categories
+  @id = params[:bill_id].to_i
 
+  bill = @storage.bill(@id)
+
+  unless bill
+    session[:message] = 'This bill does not exist'
+    redirect '/bills', 422
+  else
+    @memo, @amount, @date, @category, @vendor = bill
+    erb :edit_bill
+  end
 end
 
-put '/bills/:bill_id' do
+post '/bills/:id/edit' do
+  error = nil
+  error = 'The memo needs to have at least two chars' unless valid_string?(params[:memo])
+  error = 'The category needs to have at least two chars' unless valid_string?(params[:category])
+  error = 'The amount needs to be a decimal number (ie. 12.34)' unless valid_amount?(params[:amount])
+  error = 'The vendor needs to have at least two chars' unless valid_string?(params[:vendor])
 
-end
-
-delete '/bills/:bill_id' do
-  # logged_in?
   id = params[:id]
-  # bills = all_bills
 
-  bill_index = bills.index { |bill| bill[:id] == id }
+  if error
+    session[:message] = error
+    status 422
+  else
+    values = [id,
+              params[:memo],
+              params[:amount],
+              params[:date],
+              params[:category],
+              params[:vendor]]
 
-  if !bill_index
+    @storage.update_bill(values)
+    session[:message] = 'The bill has been updated'
+
+  end
+  redirect "/bills/#{id}"
+end
+
+post '/bills/:id/delete' do
+  id = params[:id]
+
+  unless @storage.bill(id)
     session[:message] = 'The bill does not exist'
     redirect '/', 422
   else
-    @user_data[:spending][year][month][:bills].delete_if { |bill| bill[:id] == id }
-    write_user_yaml(session[:username])
+    @storage.delete_bill(id)
     session[:message] = 'The bill has been deleted'
     redirect '/'
   end
 end
 
-get '/vendors/edit' do
+get '/vendors' do
+  @vendors = @storage.vendors
+  erb :vendors
+end
 
+get '/vendors/:id' do
+  @id, @name = @storage.vendor(params[:id])
+  erb :vendor
+end
+
+post '/vendors/:id/edit' do
+  @id = params[:id]
+  @name = params[:name]
+
+  error = nil
+  error = 'The vendor needs to have at least two chars' unless valid_string?(@name)
+  error = 'The vendor name already exits' if @storage.vendor(@id) != @name && @storage.vendor_id(@name)
+
+  if error
+    session[:message] = error
+    status 422
+    erb :vendor
+  else
+    @storage.update_vendor([@id, @name])
+    session[:message] = 'The vendor has been updated'
+    redirect '/vendors'
+  end
 end
 
 # get '/login' do

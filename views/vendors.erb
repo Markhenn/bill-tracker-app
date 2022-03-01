@@ -1,0 +1,19 @@
+<div>
+  <h2>Vendors</h2>
+  <table>
+    <tr>
+      <th>Vendor Name</th>
+      <th></th>
+    </tr>
+    <% @vendors.each do |vendor| %>
+      <tr>
+        <td><%= vendor[:name] %></td>
+        <td>
+          <form style="display:inline;" method"get" action="/vendors/<%= vendor[:id] %>">
+            <button type="submit">edit vendor</button>
+          </form>
+        </td>
+      </tr>
+    <% end %>
+  </table>
+</div>

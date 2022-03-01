@@ -34,6 +34,51 @@ class DatabasePersistance
     query(sql, *values)
   end
 
+  def bill(id)
+    sql = <<~SQL
+    SELECT
+    bills.memo, bills.amount, bills.payment_date,
+    budget_categories.name AS category_name,
+    vendors.name AS vendor_name
+    FROM bills
+    JOIN vendors ON vendors.id = bills.vendor_id
+    JOIN monthly_categories ON monthly_categories.id = bills.monthly_categories_id
+    JOIN budget_categories ON monthly_categories.budget_category_id = budget_categories.id
+    WHERE bills.id = $1;
+    SQL
+
+    result = query(sql, id)
+    result.values.first
+  end
+
+  def update_bill(values)
+    id = values.shift.to_i
+
+    vendor_id = get_vendor_id(values[4])
+    monthly_categories_id = get_monthly_category_id(values[3], values[2])
+
+    values = [id] + values[0..2] + [monthly_categories_id] + [vendor_id]
+
+    sql = <<~SQL
+    UPDATE bills
+    SET
+    memo = $2,
+    amount = $3,
+    payment_date = $4,
+    monthly_categories_id = $5,
+    vendor_id = $6
+    WHERE
+    id = $1;
+    SQL
+
+    query(sql, *values)
+  end
+
+  def delete_bill(id)
+    sql = 'DELETE FROM bills WHERE id = $1;'
+    query(sql, id)
+  end
+
   def all_categories
     sql = 'SELECT id, name FROM budget_categories'
     result = query(sql)
@@ -54,7 +99,7 @@ class DatabasePersistance
     bills.payment_date,
     bills.amount,
     vendors.id AS vendor_id,
-    vendors.name
+    vendors.name AS vendor_name
     FROM
     bills
     JOIN vendors ON bills.vendor_id = vendors.id
@@ -63,10 +108,52 @@ class DatabasePersistance
     SQL
 
     result = query(sql)
-    [result.values]
+
+    bills = result.map do |tuple|
+      {
+        id: tuple['bill_id'],
+        memo: tuple['memo'],
+        date: tuple['payment_date'],
+        amount: tuple['amount'],
+        vendor: tuple['vendor_name']
+      }
+    end
+
+    bills
   end
 
-  def category_budgets
+  def vendors
+    sql = 'SELECT * FROM vendors;'
+    result = query(sql)
+
+    vendors = result.map do |tuple|
+      {id: tuple['id'],
+       name: tuple['name']}
+    end
+
+    vendors
+  end
+
+  def vendor(id)
+    sql = 'SELECT * FROM vendors WHERE id = $1;'
+    result = query(sql, id)
+    result.values.first
+  end
+
+  def vendor_id(name)
+    sql = "SELECT id FROM vendors WHERE name = $1"
+    result = query(sql, name)
+
+    return nil if result.ntuples.zero?
+    result.values.first.first.to_i
+  end
+
+  def update_vendor(values)
+    sql = 'UPDATE vendors SET name = $2 WHERE id = $1;'
+    query(sql, *values)
+  end
+
+  def categories
     sql = <<~SQL
     SELECT
     budget_categories.id AS category_id,
@@ -86,7 +173,42 @@ class DatabasePersistance
 
     result = query(sql)
 
-    [result.values]
+    categories = result.map do |tuple|
+      {
+        id: tuple['category_id'],
+        name: tuple['category_name'],
+        budget: tuple['category_budget'],
+        avg_bills: tuple['average_bills']
+      }
+    end
+
+    categories
+  end
+
+  def category(id)
+    sql = 'SELECT name, default_amount FROM budget_categories WHERE id = $1;'
+    result = query(sql, id)
+    pp result.values.first
+  end
+
+  def category_id(name)
+    sql = "SELECT id FROM budget_categories WHERE name = $1"
+    result = query(sql, name)
+
+    return nil if result.ntuples.zero?
+    result.values.first.first.to_i
+  end
+
+  def update_category(values)
+    sql = <<~SQL
+    UPDATE budget_categories
+    SET
+    name = $2,
+    default_amount = $3
+    WHERE id = $1;
+    SQL
+
+    query(sql, *values)
   end
 
   def monthly_budgets
@@ -131,7 +253,6 @@ class DatabasePersistance
       budget[year][:bills_sum] = months.values.map {|hsh| hsh[:bills_sum]}.reduce(:+)
     end
 
-    pp budget
     [budget]
 
   end
@@ -164,7 +285,6 @@ class DatabasePersistance
       end
     end
 
-    pp budget
     [budget]
   end
 
@@ -210,7 +330,6 @@ class DatabasePersistance
       end
     end
 
-    # pp budget
     [budget]
   end
 
@@ -243,14 +362,6 @@ class DatabasePersistance
     SQL
   end
 
-  def vendor_id(name)
-    sql = "SELECT id FROM vendors WHERE name = $1"
-    result = query(sql, name)
-
-    return nil if result.ntuples.zero?
-    result.values.first.first.to_i
-  end
-
   def get_vendor_id(name)
     loop do
       id = vendor_id(name)
@@ -262,14 +373,6 @@ class DatabasePersistance
   def budget_id(date_beginning)
     sql = "SELECT id FROM monthly_budgets WHERE date_beginning = $1"
     result = query(sql, date_beginning)
-
-    return nil if result.ntuples.zero?
-    result.values.first.first.to_i
-  end
-
-  def category_id(name)
-    sql = "SELECT id FROM budget_categories WHERE name = $1"
-    result = query(sql, name)
 
     return nil if result.ntuples.zero?
     result.values.first.first.to_i
