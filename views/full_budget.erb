@@ -1,6 +1,6 @@
 <div>
   <h2>Full Budget</h2>
-  <% @budget.first.each do |year, months| %>
+  <% @budget.each do |year, months| %>
   <%# <% sort_hash_on_key(@full_budget) do |year, months| %1> %>
     <h2><%= year %></h2>
     <p><%= show_yearly_summary(months) %></p>
@@ -8,7 +8,7 @@
     <% months.each do |month, month_values| %>
       <h3>
         <%= full_month_name(month, year) %>
-        <form style="display:inline;" method="get" action="/budgets/<%= month_values[:budget_id] %>">
+        <form style="display:inline;" method="get" action="/budgets/<%= month_values[:budget_id] %>/edit">
           <button name="edit" type="submit">
             Edit Budget <%= full_month_name(month, year) %>
           </button>
@@ -18,16 +18,31 @@
       <% sort_categories(month_values[:categories]) do |category, cat_values| %>
         <h3>Category: <%= cat_values[:category_name] %></h3>
         <p><%= show_budget_balance(cat_values) %></p>
-        <% sort_bills(cat_values[:bills]) do |bill| %>
-          <%= "Item: #{bill[:memo]}, Price: #{bill[:bill_amount]}, Payment Date: #{bill[:payment_date]}, Vendor: #{bill[:vendor]}" %>
-          <form style="display:inline;" method="get" action="/bills/<%= bill[:bill_id] %>">
-            <button name="edit" type="submit">Edit Bill</button>
-          </form>
-          <form style="display:inline;" method="post" action="/bills/<%= bill[:bill_id] %>/delete">
-            <button name="delete" type="submit">Delete Bill</button>
-          </form>
-          </br>
-        <% end %>
+        <table>
+          <tr>
+            <th>Item</th>
+            <th>Price</th>
+            <th>Payment Date</th>
+            <th>Vendor</th>
+            <th></th>
+          </tr>
+          <% sort_bills(cat_values[:bills]) do |bill| %>
+            <tr>
+              <td><%= bill[:memo] %></td>
+              <td><%= bill[:bill_amount] %></td>
+              <td><%= bill[:payment_date] %></td>
+              <td><%= bill[:vendor] %></td>
+              <td>
+                <form style="display:inline;" method="get" action="/bills/<%= bill[:bill_id] %>">
+                  <button name="edit" type="submit">Edit Bill</button>
+                </form>
+                <form style="display:inline;" method="post" action="/bills/<%= bill[:bill_id] %>/delete">
+                  <button name="delete" type="submit">Delete Bill</button>
+                </form>
+              </td>
+            </tr>
+          <% end %>
+        </table>
       <% end %>
     <% end %>
   <% end %>

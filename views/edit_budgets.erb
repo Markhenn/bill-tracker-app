@@ -1,0 +1,11 @@
+<h2>Pick a month to edit its budget</h2>
+<form action="/budgets/edit" method="post">
+  <label for="months">Choose a month to edit:</label>
+  <select name="months_id" id="months">
+    <% @months.each do |month| %>
+      <option value="<%= month[:id] %>">
+      <%= full_month_name(month[:month], month[:year]) %>
+      </option>
+    <% end %>
+    <input type="submit" value="Edit Budget">
+</form>

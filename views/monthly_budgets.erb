@@ -8,7 +8,7 @@
     <% months.each do |month, month_values| %>
       <h3>
         <%= full_month_name(month, year) %>
-        <form style="display:inline;" method="get" action="/budgets/<%= month_values[:budget_id] %>">
+        <form style="display:inline;" method="get" action="/budgets/<%= month_values[:budget_id] %>/edit">
           <button name="edit" type="submit">
             Edit Budget <%= full_month_name(month, year) %>
           </button>

@@ -1,0 +1,44 @@
+<div>
+  <h2>
+    Edit Budget for
+    <%= full_month_name(@monthly_value[:month], @monthly_value[:year]) %>:
+  </h2>
+  <h3>Budget for the month: <strong><%= @monthly_value[:amount] %></strong></h3>
+  <table>
+    <tr>
+      <th>Category Name</th>
+      <th>Category Amount</th>
+      <th>Default Amount for Category</th>
+      <th></th>
+    </tr>
+    <form id="cat_budgets" method="post" action="/budgets/<%= @monthly_value[:id] %>/edit">
+    <% @category_values.each do |category| %>
+      <tr>
+        <td><%= category[:cat_name] %></td>
+        <td><input name="<%= category[:cat_id] %>" value="<%= category[:cat_amount] %>"</td>
+        <td><%= category[:default_amount] %></td>
+        <td></td>
+      </tr>
+    <% end %>
+    </form>
+    <tr>
+      <th>Sum of Categories</th>
+      <th><%= @sum_of_categories %></th>
+      <th></th>
+      <th></th>
+    </tr>
+    <tr>
+      <th><%= full_month_name(@monthly_value[:month], @monthly_value[:year]) %></th>
+      <th><input form="cat_budgets" name="monthly_budget" value="<%= @month_amount %>"</th>
+      <th></th>
+      <th></th>
+    </tr>
+    <tr>
+      <th>Difference Month and Categories</th>
+      <th><%= @difference %></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </table>
+  <input type="submit" form="cat_budgets" value="Change Budget">
+</div>

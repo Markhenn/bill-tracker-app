@@ -76,7 +76,6 @@ helpers do
     bills = values.delete(:bills_sum)
     budget = values.map {|m| m[1][:budget_amount]}.reduce(:+)
     year_values = {budget_amount: budget, bills_sum: bills}
-    pp year_values
     show_budget_balance(year_values)
   end
 end
@@ -156,6 +155,10 @@ def invalid_budget?(budget)
   budget !~ /\A+?\d+(\.?\d{1,2})\z/
 end
 
+def valid_id(string)
+  string =~ /\A\d+\z/
+end
+
 # def pw_error_message(password)
 #   if password !~ /.{4,}/
 #     'The password needs to contain at least 4 chars'
@@ -195,20 +198,18 @@ def determine_difference_message(values)
 end
 
 before do
+  # There is no user system implemented, this is a work around
   # @user_data = load_user('admin')
   @storage = DatabasePersistance.new(logger)
   userid = '1'
   @user_data = @storage.user_data(userid)
+  @user_id =  @user_data.first
   @default_budget = @user_data[2]
 end
 
 get '/' do
-  # logged_in?
-  # @budget = @user_data[:default_budget]
-  # @spending = @user_data[:spending]
-
-  redirect '/budgets/monthly_categories'
-  # erb :index
+  month_id = @storage.last_month_id
+  redirect "/budgets/#{month_id}/show"
 end
 
 get '/bills' do
@@ -217,14 +218,12 @@ get '/bills' do
 end
 
 get '/categories' do
-  @category = @storage.categories
-  p @category
+  @categories_bills = @storage.categories_bills
   erb :categories
 end
 
 get '/categories/:id' do
   @id = params[:id]
-  p params
 
   error = nil
   error = 'This category does not exist' unless @storage.category(@id)
@@ -262,6 +261,17 @@ post '/categories/:id/edit' do
   end
 end
 
+get '/budgets/:month_id/show' do
+  @budget = @storage.budget_of_a_month(params["month_id"]).first
+  @months = @storage.months_list
+
+  erb :budget_of_a_month
+end
+
+post '/budgets/show' do
+  redirect "/budgets/#{params[:month_id]}/show"
+end
+
 get '/budgets/monthly' do
   @budget = @storage.monthly_budgets
   erb :monthly_budgets
@@ -273,45 +283,76 @@ get '/budgets/monthly_categories' do
 end
 
 get '/budgets/full' do
-  # logged_in?
-  # @budget = @user_data[:default_budget]
-  # @spending = @user_data[:spending]
-
-  @budget = @storage.full_budget
+  @budget = @storage.full_budget.first
   erb :full_budget
 end
 
 get '/users/change_default_budget' do
-  # logged_in?
+  @default_budget = @storage.default_user_budget(@user_id)
   erb :change_default_budget
 end
 
 post '/users/change_default_budget' do
-  # logged_in?
   new_budget = params[:new_budget]
 
-  if invalid_budget?(new_budget)
+  error = nil
+  error = 'The new budget needs to be >= 0 but can be a float'
+
+  if error
     @new_budget = new_budget
     status 422
-    session[:message] = 'The new budget needs to be >= 0 but can be a float'
-    erb :change_budget
+    session[:message] = error
+    erb :change_default_budget
   else
-    @user_data[:default_budget] = new_budget
-    write_user_yaml(session[:username])
+    @storage.update_default_budget(@user_id, new_budget)
     session[:message] = 'The budget has been updated'
     redirect '/'
   end
 end
 
 get '/budgets/edit' do
+  @months = @storage.months_list
   erb :edit_budgets
 end
 
-get '/budgets/edit/:monthly_budget_id' do
+post '/budgets/edit' do
+  redirect "budgets/#{params[:months_id]}/edit"
+end
+
+get '/budgets/:month_id/edit' do
+  id = params[:month_id]
+  @monthly_value = @storage.get_monthly_budget(id)
+  @category_values = @storage.get_monthly_categories(id)
+  @month_amount = @monthly_value[:amount].to_f
+  @sum_of_categories = @category_values.reduce(0) do |sum, month|
+    sum + month[:cat_amount].to_f
+  end
+  @difference = (@month_amount - @sum_of_categories).round(2)
   erb :edit_monthly_budget
 end
 
-post '/budgets/:monthly_budget_id/edit' do
+post '/budgets/:month_id/edit' do
+  month_id = params[:month_id]
+  monthly_budget = params[:monthly_budget]
+
+  error = nil
+  error = 'The budget needs to be a decimal number (ie. 12.34)' unless valid_amount?(monthly_budget)
+
+  if error
+    status 422
+    session[:message] = error
+  else
+    category_budgets = {}
+    params.each do |key, value|
+      next unless valid_id(key)
+      # This error check is a workaround -> improve with Javascript before sending
+      value = 0 if invalid_budget?(value)
+      category_budgets[key] = value.to_f
+    end
+
+    @storage.update_budgets(month_id, category_budgets, monthly_budget)
+  end
+  redirect "budgets/#{month_id}/edit"
 end
 
 get '/bills/add' do

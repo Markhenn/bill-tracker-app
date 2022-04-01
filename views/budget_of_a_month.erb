@@ -1,0 +1,53 @@
+<div>
+  <h2>Pick a month to show</h2>
+  <form action="/budgets/show" method="post">
+    <label for="months">Choose a month to show:</label>
+    <select name="month_id" id="months">
+      <% @months.each do |month| %>
+        <option value="<%= month[:id] %>">
+        <%= full_month_name(month[:month], month[:year]) %>
+        </option>
+      <% end %>
+      <input type="submit" value="Show Budget">
+  </form>
+</div>
+<div>
+  <h2>Budget for <%= full_month_name(@budget[:month], @budget[:year]) %></h2>
+  <p><%= show_budget_balance(@budget) %></p>
+  <h3>
+    <form style="display:inline;" method="get" action="/budgets/<%= @budget[:budget_id] %>/edit">
+      <button name="edit" type="submit">
+        Edit Budget <%= full_month_name(@budget[:month], @budget[:year]) %>
+      </button>
+    </form>
+  </h3>
+  <% sort_categories(@budget[:categories]) do |category, cat_values| %>
+    <h3>Category: <%= cat_values[:category_name] %></h3>
+    <p><%= show_budget_balance(cat_values) %></p>
+    <table>
+      <tr>
+        <th>Item</th>
+        <th>Price</th>
+        <th>Payment Date</th>
+        <th>Vendor</th>
+        <th></th>
+      </tr>
+      <% sort_bills(cat_values[:bills]) do |bill| %>
+        <tr>
+          <td><%= bill[:memo] %></td>
+          <td><%= bill[:bill_amount] %></td>
+          <td><%= bill[:payment_date] %></td>
+          <td><%= bill[:vendor] %></td>
+          <td>
+            <form style="display:inline;" method="get" action="/bills/<%= bill[:bill_id] %>">
+              <button name="edit" type="submit">Edit Bill</button>
+            </form>
+            <form style="display:inline;" method="post" action="/bills/<%= bill[:bill_id] %>/delete">
+              <button name="delete" type="submit">Delete Bill</button>
+            </form>
+          </td>
+        </tr>
+      <% end %>
+    </table>
+  <% end %>
+</div>

@@ -14,8 +14,54 @@ class DatabasePersistance
     result.values.first
   end
 
-  def budget_of_a_month
+  def last_month_id
+    sql = 'SELECT id FROM monthly_budgets ORDER BY date_beginning DESC LIMIT 1'
+    query(sql).values.first.first
+  end
 
+  def full_budget
+    result = query(full_budget_sql)
+
+    budget = Hash.new { |h,k| h[k] = Hash.new(&h.default_proc) }
+
+    result.each do |tuple|
+      year = tuple['year']
+      month = tuple['month']
+      cat_id = tuple['category_id'].to_i
+      categories = budget[year][month][:categories]
+
+      bill = {
+            bill_id: tuple['bill_id'].to_i,
+            memo: tuple['memo'],
+            bill_amount: tuple['bill_amount'].to_f,
+            payment_date: tuple['payment_date'],
+            vendor: tuple['vendor']
+      }
+
+      if categories[cat_id][:bills].empty?
+        categories[cat_id][:bills] = [bill]
+      else
+        categories[cat_id][:bills] << bill
+      end
+
+      unless budget[year].key?(:bills_sum)
+        budget[year][:bills_sum] = tuple['yearly_sum'].to_f
+      end
+
+      unless budget[year][month].key?(:budget_id)
+        budget[year][month][:budget_id] = tuple['budget_id'].to_i
+        budget[year][month][:budget_amount] = tuple['budget_amount'].to_f
+        budget[year][month][:bills_sum] = tuple['monthly_sum'].to_f
+      end
+
+      unless categories[cat_id].key?(:category_name)
+        categories[cat_id][:category_name] = tuple['category_name']
+        categories[cat_id][:budget_amount] = tuple['category_amount'].to_f
+        categories[cat_id][:bills_sum] = tuple['monthly_cat_sum'].to_f
+      end
+    end
+
+    [budget]
   end
 
   def add_bill(values)
@@ -154,6 +200,19 @@ class DatabasePersistance
   end
 
   def categories
+    sql = 'SELECT * FROM budget_categories;'
+    result = query(sql)
+
+    result.map do |tuple|
+      {
+        id: tuple['id'],
+        name: tuple['name'],
+        default_amount: tuple['default_amount']
+      }
+    end
+  end
+
+  def categories_bills
     sql = <<~SQL
     SELECT
     budget_categories.id AS category_id,
@@ -162,8 +221,8 @@ class DatabasePersistance
     TRUNC(SUM(bills.amount) / COUNT(DISTINCT(monthly_budget_id)), 2) AS average_bills
     FROM
     budget_categories
-    JOIN monthly_categories ON budget_categories.id = monthly_categories.budget_category_id
-    JOIN bills ON monthly_categories.id = bills.monthly_categories_id
+    LEFT JOIN monthly_categories ON budget_categories.id = monthly_categories.budget_category_id
+    LEFT JOIN bills ON monthly_categories.id = bills.monthly_categories_id
     GROUP BY
     category_id,
     category_name
@@ -174,11 +233,14 @@ class DatabasePersistance
     result = query(sql)
 
     categories = result.map do |tuple|
+      avg_bills = tuple['average_bills']
+      budget = tuple['category_budget']
       {
         id: tuple['category_id'],
         name: tuple['category_name'],
-        budget: tuple['category_budget'],
-        avg_bills: tuple['average_bills']
+        budget: budget,
+        avg_bills: avg_bills,
+        difference: (budget.to_f - avg_bills.to_f).round(2)
       }
     end
 
@@ -188,7 +250,7 @@ class DatabasePersistance
   def category(id)
     sql = 'SELECT name, default_amount FROM budget_categories WHERE id = $1;'
     result = query(sql, id)
-    pp result.values.first
+    result.values.first
   end
 
   def category_id(name)
@@ -288,16 +350,14 @@ class DatabasePersistance
     [budget]
   end
 
-  def full_budget
-    result = query(full_budget_sql)
+  def budget_of_a_month(id)
+    result = query(budget_of_a_month_sql, id)
 
     budget = Hash.new { |h,k| h[k] = Hash.new(&h.default_proc) }
 
     result.each do |tuple|
-      year = tuple['year']
-      month = tuple['month']
       cat_id = tuple['category_id'].to_i
-      categories = budget[year][month][:categories]
+      categories = budget[:categories]
 
       bill = {
             bill_id: tuple['bill_id'].to_i,
@@ -307,20 +367,10 @@ class DatabasePersistance
             vendor: tuple['vendor']
       }
 
-      if categories[cat_id][:bills].empty?
+      if budget[:categories][cat_id][:bills].empty?
         categories[cat_id][:bills] = [bill]
       else
         categories[cat_id][:bills] << bill
-      end
-
-      unless budget[year].key?(:bills_sum)
-        budget[year][:bills_sum] = tuple['yearly_sum'].to_f
-      end
-
-      unless budget[year][month].key?(:budget_id)
-        budget[year][month][:budget_id] = tuple['budget_id'].to_i
-        budget[year][month][:budget_amount] = tuple['budget_amount'].to_f
-        budget[year][month][:bills_sum] = tuple['monthly_sum'].to_f
       end
 
       unless categories[cat_id].key?(:category_name)
@@ -330,7 +380,115 @@ class DatabasePersistance
       end
     end
 
+    fields = result.tuple(1)
+    budget[:year] = fields['year']
+    budget[:month] = fields['month']
+    budget[:budget_id] = fields['budget_id'].to_i
+    budget[:bills_sum] = fields['monthly_sum'].to_f
+    budget[:budget_amount] = fields['budget_amount'].to_f
+
     [budget]
+  end
+
+  def get_monthly_budget(id)
+    sql = <<~SQL
+    SELECT
+    amount,
+    EXTRACT (YEAR FROM monthly_budgets.date_beginning) AS year,
+    EXTRACT (MONTH FROM monthly_budgets.date_beginning) AS month
+    FROM monthly_budgets
+    WHERE id = $1;
+    SQL
+
+    result = query(sql, id).values.first
+
+    value = {
+      id: id,
+      amount: result[0],
+      year: result[1],
+      month: result[2]
+    }
+    value
+  end
+
+  def get_monthly_categories(month_id)
+    sql = <<~SQL
+    SELECT
+    budget_categories.id AS cat_id,
+    budget_categories.name,
+    budget_categories.default_amount,
+    (SELECT id FROM monthly_categories WHERE budget_category_id = budget_categories.id AND monthly_budget_id = $1)  AS monthly_id,
+    (SELECT category_amount FROM monthly_categories WHERE budget_category_id = budget_categories.id AND monthly_budget_id = $1)  AS cat_amount
+    FROM budget_categories;
+    SQL
+    result = query(sql, month_id)
+
+    values = result.map do |tuple|
+      {
+        month_id: month_id,
+        cat_id: tuple['cat_id'],
+        month_cat_id: tuple['monthly_id'],
+        cat_name: tuple['name'],
+        cat_amount: tuple['cat_amount'],
+        default_amount: tuple['default_amount']
+      }
+    end
+
+    values
+  end
+
+  def update_monthly_budget(id, amount)
+    sql = <<~SQL
+    UPDATE monthly_budgets
+    SET amount = $2
+    WHERE id = $1;
+    SQL
+
+    query(sql, id, amount)
+  end
+
+  def update_monthly_category_budget(id, amount)
+      sql = <<~SQL
+      UPDATE monthly_categories
+      SET category_amount = $2
+      WHERE id = $1;
+      SQL
+
+      query(sql, id, amount)
+  end
+
+  def update_budgets(month_id, category_budgets, monthly_budget)
+    category_budgets.each do |cat_id, amount|
+      id = monthly_category_id(cat_id, month_id)
+
+      if id
+        update_monthly_category_budget(id, amount)
+      else
+        add_monthly_category_to_db(cat_id, month_id, amount)
+      end
+    end
+
+    update_monthly_budget(month_id, monthly_budget)
+  end
+
+  def months_list
+    sql = <<~SQL
+    SELECT id,
+    EXTRACT (YEAR FROM date_beginning) AS year,
+    EXTRACT (MONTH FROM date_beginning) AS month
+    FROM monthly_budgets
+    ORDER BY date_beginning DESC;
+    SQL
+
+    result = query(sql)
+
+    result.map do |tuple|
+      {
+        id: tuple['id'],
+        year: tuple['year'],
+        month: tuple['month']
+      }
+    end
   end
 
   private
@@ -361,6 +519,29 @@ class DatabasePersistance
     ORDER BY monthly_budgets.date_beginning DESC;
     SQL
   end
+
+  def budget_of_a_month_sql
+    sql = <<~SQL
+    SELECT
+    bills.id AS bill_id, bills.memo, bills.amount AS bill_amount, bills.payment_date,
+    vendors.name AS vendor,
+    budget_categories.name AS category_name, budget_categories.id AS category_id,
+    monthly_categories.category_amount AS category_amount,
+    monthly_budgets.id AS budget_id, monthly_budgets.amount AS budget_amount, monthly_budgets.date_beginning,
+    SUM(bills.amount) OVER (PARTITION BY monthly_budgets.id) AS monthly_sum,
+    SUM(bills.amount) OVER (PARTITION BY monthly_categories.id) AS monthly_cat_sum,
+    EXTRACT (YEAR FROM monthly_budgets.date_beginning) AS year,
+    EXTRACT (MONTH FROM monthly_budgets.date_beginning) AS month
+    FROM bills
+    JOIN vendors ON bills.vendor_id = vendors.id
+    JOIN monthly_categories ON monthly_categories.id = bills.monthly_categories_id
+    JOIN budget_categories ON budget_categories.id = monthly_categories.budget_category_id
+    JOIN monthly_budgets ON monthly_categories.monthly_budget_id = monthly_budgets.id
+    WHERE
+    monthly_budgets.id = $1;
+    SQL
+  end
+
 
   def get_vendor_id(name)
     loop do
@@ -406,14 +587,14 @@ class DatabasePersistance
     end
   end
 
-  def get_monthly_category_id(category_name, date)
+  def get_monthly_category_id(category_name, date, amount = 0)
     c_id = get_category_id(category_name)
     b_id = get_budget_id(date)
 
     loop do
       id = monthly_category_id(c_id, b_id)
       break id if id
-      add_monthly_category_to_db(c_id, b_id)
+      add_monthly_category_to_db(c_id, b_id, amount)
     end
   end
 
@@ -423,25 +604,31 @@ class DatabasePersistance
     sql = "SELECT default_monthly_budget FROM users WHERE id = $1"
     default_amount = query(sql, user_id).values.first.first.to_f
 
-    sql = "INSERT INTO monthly_budgets(date_beginning, amount) VALUES ($1, $2)"
+    sql = "INSERT INTO monthly_budgets(date_beginning, amount) VALUES ($1, $2);"
     query(sql, date_beginning, default_amount)
   end
 
   def add_category_to_db(name)
-    sql = "INSERT INTO budget_categories(name, default_amount) VALUES ($1, 0)"
+    sql = "INSERT INTO budget_categories(name, default_amount) VALUES ($1, 0);"
     query(sql, name)
   end
 
-  def add_monthly_category_to_db(category_id, budget_id)
-    sql = "SELECT default_amount FROM budget_categories WHERE id = $1"
-    amount = query(sql, category_id).values.first.first
+  def get_default_category_amount(id)
+    sql = "SELECT default_amount FROM budget_categories WHERE id = $1;"
+    query(sql, id).values.first.first
+  end
 
-    sql = "INSERT INTO monthly_categories(budget_category_id, monthly_budget_id, category_amount) VALUES ($1, $2, $3)"
+  def add_monthly_category_to_db(category_id, budget_id, amount)
+    unless amount > 0
+      amount = get_default_category_amount(category_id) || 0
+    end
+
+    sql = "INSERT INTO monthly_categories(budget_category_id, monthly_budget_id, category_amount) VALUES ($1, $2, $3);"
     query(sql, category_id, budget_id, amount)
   end
 
   def add_vendor_to_db(name)
-    sql = "INSERT INTO vendors(name) VALUES ($1)"
+    sql = "INSERT INTO vendors(name) VALUES ($1);"
     query(sql, name)
   end
 end
